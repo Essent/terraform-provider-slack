@@ -86,7 +86,7 @@ func (p *SlackProvider) Resources(ctx context.Context) []func() resource.Resourc
 
 func (p *SlackProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewUserDataDataSource,
+		NewUserDataSource,
 	}
 }
 

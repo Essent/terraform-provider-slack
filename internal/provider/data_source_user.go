@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -11,17 +14,17 @@ import (
 	"github.com/slack-go/slack"
 )
 
-var _ datasource.DataSource = &UserDataDataSource{}
+var _ datasource.DataSource = &UserDataSource{}
 
-func NewUserDataDataSource() datasource.DataSource {
-	return &UserDataDataSource{}
+func NewUserDataSource() datasource.DataSource {
+	return &UserDataSource{}
 }
 
-type UserDataDataSource struct {
+type UserDataSource struct {
 	client *slack.Client
 }
 
-type UserDataDataSourceModel struct {
+type UserDataSourceModel struct {
 	UserID      types.String `tfsdk:"user_id"`
 	Email       types.String `tfsdk:"email"`
 	RealName    types.String `tfsdk:"real_name"`
@@ -29,11 +32,11 @@ type UserDataDataSourceModel struct {
 	ID          types.String `tfsdk:"id"`
 }
 
-func (d *UserDataDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *UserDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_user_data"
 }
 
-func (d *UserDataDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Retrieve Slack user information.",
 		Attributes: map[string]schema.Attribute{
@@ -61,7 +64,7 @@ func (d *UserDataDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 	}
 }
 
-func (d *UserDataDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *UserDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		// https://stackoverflow.com/questions/78623763/terraform-provider-method-configure-not-getting-called
 		return
@@ -79,8 +82,8 @@ func (d *UserDataDataSource) Configure(ctx context.Context, req datasource.Confi
 	d.client = providerData.Client
 }
 
-func (d *UserDataDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data UserDataDataSourceModel
+func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data UserDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
