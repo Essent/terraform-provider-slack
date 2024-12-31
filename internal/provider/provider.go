@@ -5,7 +5,7 @@ package provider
 
 import (
 	"context"
-	"net/http"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -13,81 +13,91 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/slack-go/slack"
 )
 
-// Ensure ScaffoldingProvider satisfies various provider interfaces.
-var _ provider.Provider = &ScaffoldingProvider{}
-var _ provider.ProviderWithFunctions = &ScaffoldingProvider{}
+var _ provider.Provider = &SlackProvider{}
+var _ provider.ProviderWithFunctions = &SlackProvider{}
 
-// ScaffoldingProvider defines the provider implementation.
-type ScaffoldingProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
+type SlackProvider struct {
 	version string
 }
 
-// ScaffoldingProviderModel describes the provider data model.
-type ScaffoldingProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
+type SlackProviderModel struct {
+	SlackToken types.String `tfsdk:"slack_token"`
 }
 
-func (p *ScaffoldingProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "scaffolding"
+type SlackProviderData struct {
+	Client *slack.Client
+}
+
+func (p *SlackProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "slack"
 	resp.Version = p.version
 }
 
-func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *SlackProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Example provider attribute",
-				Optional:            true,
+			"slack_token": schema.StringAttribute{
+				MarkdownDescription: "Slack token to authenticate API calls.",
+				Required:            true,
+				Sensitive:           true,
 			},
 		},
 	}
 }
 
-func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data ScaffoldingProviderModel
-
+func (p *SlackProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data SlackProviderModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
+	if data.SlackToken.IsNull() || data.SlackToken.IsUnknown() {
+		resp.Diagnostics.AddError(
+			"Missing Slack Token",
+			"The `slack_token` must be provided to authenticate API calls.",
+		)
+		return
+	}
+	tflog.Info(ctx, "Configuring slack client")
+	client := slack.New(data.SlackToken.ValueString())
+	_, err := client.AuthTest()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Slack Token",
+			fmt.Sprintf("Unable to authenticate with Slack: %s", err),
+		)
+		return
+	}
 
-	// Example client configuration for data sources and resources
-	client := http.DefaultClient
-	resp.DataSourceData = client
-	resp.ResourceData = client
+	resp.DataSourceData = &SlackProviderData{Client: client}
+	resp.ResourceData = &SlackProviderData{Client: client}
 }
 
-func (p *ScaffoldingProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *SlackProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		// Add your resources here if needed
 	}
 }
 
-func (p *ScaffoldingProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+func (p *SlackProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewExampleDataSource,
+		NewUserDataDataSource,
 	}
 }
 
-func (p *ScaffoldingProvider) Functions(ctx context.Context) []func() function.Function {
+func (p *SlackProvider) Functions(ctx context.Context) []func() function.Function {
 	return []func() function.Function{
-		NewExampleFunction,
+		// Add your provider-level functions here if needed
 	}
 }
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &ScaffoldingProvider{
-			version: version,
-		}
+		return &SlackProvider{version: version}
 	}
 }
