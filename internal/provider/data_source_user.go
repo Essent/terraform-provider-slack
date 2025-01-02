@@ -28,22 +28,20 @@ type UserDataSource struct {
 }
 
 type UserDataSourceModel struct {
-	UserID      types.String `tfsdk:"user_id"`
-	Email       types.String `tfsdk:"email"`
-	RealName    types.String `tfsdk:"real_name"`
-	DisplayName types.String `tfsdk:"display_name"`
-	ID          types.String `tfsdk:"id"`
+	Email types.String `tfsdk:"email"`
+	Name  types.String `tfsdk:"name"`
+	ID    types.String `tfsdk:"id"`
 }
 
 func (d *UserDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_user_data"
+	resp.TypeName = req.ProviderTypeName + "_user"
 }
 
 func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Retrieve Slack user information. Either `user_id` or `email` must be specified, but not both.",
+		MarkdownDescription: "Retrieve Slack user information. Either `id` or `email` must be specified, but not both.",
 		Attributes: map[string]schema.Attribute{
-			"user_id": schema.StringAttribute{
+			"id": schema.StringAttribute{
 				MarkdownDescription: "Slack user ID to look up.",
 				Optional:            true,
 				Validators: []validator.String{
@@ -54,19 +52,11 @@ func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				MarkdownDescription: "Email of the user to look up.",
 				Optional:            true,
 				Validators: []validator.String{
-					stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("user_id")),
+					stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("id")),
 				},
 			},
-			"real_name": schema.StringAttribute{
-				MarkdownDescription: "User's real name.",
-				Computed:            true,
-			},
-			"display_name": schema.StringAttribute{
-				MarkdownDescription: "User's display name.",
-				Computed:            true,
-			},
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Unique identifier for Terraform state.",
+			"name": schema.StringAttribute{
+				MarkdownDescription: "User's name.",
 				Computed:            true,
 			},
 		},
@@ -104,8 +94,8 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		err  error
 	)
 
-	if !data.UserID.IsNull() {
-		user, err = d.client.GetUserInfo(data.UserID.ValueString())
+	if !data.ID.IsNull() {
+		user, err = d.client.GetUserInfo(data.ID.ValueString())
 	} else {
 		user, err = d.client.GetUserByEmail(data.Email.ValueString())
 	}
@@ -127,11 +117,10 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	data.Email = types.StringValue(user.Profile.Email)
-	data.RealName = types.StringValue(user.RealName)
-	data.DisplayName = types.StringValue(user.Profile.DisplayName)
+	data.Name = types.StringValue(user.Profile.DisplayNameNormalized)
 	data.ID = types.StringValue(user.ID)
 
-	tflog.Trace(ctx, "Fetched Slack user data", map[string]any{"user_id": user.ID})
+	tflog.Trace(ctx, "Fetched Slack user data", map[string]any{"id": user.ID})
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
