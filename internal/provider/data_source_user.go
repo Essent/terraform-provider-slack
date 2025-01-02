@@ -118,6 +118,14 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
+	if user.Deleted {
+		resp.Diagnostics.AddError(
+			"User is deactivated",
+			"User is deactivated in Slack",
+		)
+		return
+	}
+
 	data.Email = types.StringValue(user.Profile.Email)
 	data.RealName = types.StringValue(user.RealName)
 	data.DisplayName = types.StringValue(user.Profile.DisplayName)
