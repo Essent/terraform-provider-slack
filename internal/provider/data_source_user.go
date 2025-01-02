@@ -7,8 +7,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/slack-go/slack"
@@ -38,15 +41,21 @@ func (d *UserDataSource) Metadata(ctx context.Context, req datasource.MetadataRe
 
 func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Retrieve Slack user information.",
+		MarkdownDescription: "Retrieve Slack user information. Either `user_id` or `email` must be specified, but not both.",
 		Attributes: map[string]schema.Attribute{
 			"user_id": schema.StringAttribute{
 				MarkdownDescription: "Slack user ID to look up.",
-				Required:            true,
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("email")),
+				},
 			},
 			"email": schema.StringAttribute{
-				MarkdownDescription: "Email of the user.",
-				Computed:            true,
+				MarkdownDescription: "Email of the user to look up.",
+				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName("user_id")),
+				},
 			},
 			"real_name": schema.StringAttribute{
 				MarkdownDescription: "User's real name.",
@@ -90,7 +99,17 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	user, err := d.client.GetUserInfo(data.UserID.ValueString())
+	var (
+		user *slack.User
+		err  error
+	)
+
+	if !data.UserID.IsNull() {
+		user, err = d.client.GetUserInfo(data.UserID.ValueString())
+	} else {
+		user, err = d.client.GetUserByEmail(data.Email.ValueString())
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Client Error",
