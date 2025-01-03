@@ -117,7 +117,7 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	data.Email = types.StringValue(user.Profile.Email)
-	data.Name = types.StringValue(user.Profile.DisplayNameNormalized)
+	data.Name = types.StringValue(user.Name)
 	data.ID = types.StringValue(user.ID)
 
 	tflog.Trace(ctx, "Fetched Slack user data", map[string]any{"id": user.ID})
