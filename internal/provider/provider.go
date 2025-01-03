@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
@@ -41,8 +42,8 @@ func (p *SlackProvider) Schema(ctx context.Context, req provider.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"slack_token": schema.StringAttribute{
-				MarkdownDescription: "Slack token to authenticate API calls.",
-				Required:            true,
+				MarkdownDescription: "Slack token to authenticate API calls. Can also be set with the `SLACK_TOKEN` environment variable.",
+				Optional:            true,
 				Sensitive:           true,
 			},
 		},
@@ -56,15 +57,23 @@ func (p *SlackProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	if data.SlackToken.IsNull() || data.SlackToken.IsUnknown() {
-		resp.Diagnostics.AddError(
-			"Missing Slack Token",
-			"The `slack_token` must be provided to authenticate API calls.",
-		)
-		return
+	slackToken := data.SlackToken.ValueString()
+
+	// If slack_token was not set in the provider block, check the environment variable.
+	if slackToken == "" {
+		envToken, ok := os.LookupEnv("SLACK_TOKEN")
+		if !ok || envToken == "" {
+			resp.Diagnostics.AddError(
+				"Missing Slack Token",
+				"`slack_token` was not set in the provider block, and `SLACK_TOKEN` is not set in the environment.",
+			)
+			return
+		}
+		slackToken = envToken
 	}
+
 	tflog.Info(ctx, "Configuring slack client")
-	client := slack.New(data.SlackToken.ValueString())
+	client := slack.New(slackToken)
 	_, err := client.AuthTest()
 	if err != nil {
 		resp.Diagnostics.AddError(
