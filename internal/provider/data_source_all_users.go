@@ -109,7 +109,7 @@ func (d *AllUsersDataSource) Read(ctx context.Context, req datasource.ReadReques
 		if !user.Deleted && !user.IsBot {
 			resultingList = append(resultingList, AllUsersDataSourceModelUserItem{
 				ID:    types.StringValue(user.ID),
-				Name:  types.StringValue(user.Profile.RealName),
+				Name:  types.StringValue(user.Name),
 				Email: types.StringValue(user.Profile.Email),
 			})
 		}
