@@ -7,11 +7,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/essent/terraform-provider-slack/internal/slackExt"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/slack-go/slack"
 )
 
 var _ datasource.DataSource = &AllUsersDataSource{}
@@ -21,7 +22,7 @@ func NewAllUsersDataSource() datasource.DataSource {
 }
 
 type AllUsersDataSource struct {
-	client *slack.Client
+	client slackExt.Client
 }
 
 type AllUsersDataSourceModel struct {

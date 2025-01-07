@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/essent/terraform-provider-slack/internal/slackExt"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -21,7 +23,7 @@ func NewAllUserGroupsDataSource() datasource.DataSource {
 }
 
 type AllUserGroupsDataSource struct {
-	client *slack.Client
+	client slackExt.Client
 }
 
 type AllUserGroupsDataSourceModel struct {
@@ -113,7 +115,7 @@ func (d *AllUserGroupsDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	userGroups, err := d.client.GetUserGroups(slack.GetUserGroupsOptionIncludeUsers(true))
+	userGroups, err := d.client.GetUserGroups(ctx, slack.GetUserGroupsOptionIncludeUsers(true))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Client Error",

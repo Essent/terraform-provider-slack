@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/essent/terraform-provider-slack/internal/slackExt"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -30,7 +32,7 @@ type SlackProviderModel struct {
 }
 
 type SlackProviderData struct {
-	Client *slack.Client
+	Client slackExt.Client
 }
 
 func (p *SlackProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -83,8 +85,8 @@ func (p *SlackProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	resp.DataSourceData = &SlackProviderData{Client: client}
-	resp.ResourceData = &SlackProviderData{Client: client}
+	resp.DataSourceData = &SlackProviderData{Client: slackExt.New(client)}
+	resp.ResourceData = &SlackProviderData{Client: slackExt.New(client)}
 }
 
 func (p *SlackProvider) Resources(ctx context.Context) []func() resource.Resource {

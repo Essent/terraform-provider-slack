@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/essent/terraform-provider-slack/internal/slackExt"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -24,7 +26,7 @@ func NewUserDataSource() datasource.DataSource {
 }
 
 type UserDataSource struct {
-	client *slack.Client
+	client slackExt.Client
 }
 
 type UserDataSourceModel struct {
@@ -95,9 +97,9 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	)
 
 	if !data.ID.IsNull() {
-		user, err = d.client.GetUserInfo(data.ID.ValueString())
+		user, err = d.client.GetUserInfo(ctx, data.ID.ValueString())
 	} else {
-		user, err = d.client.GetUserByEmail(data.Email.ValueString())
+		user, err = d.client.GetUserByEmail(ctx, data.Email.ValueString())
 	}
 
 	if err != nil {
