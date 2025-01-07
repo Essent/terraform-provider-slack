@@ -2,10 +2,8 @@ package slackExt
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/slack-go/slack"
 )
 
@@ -22,11 +20,8 @@ func rateLimit[R any](ctx context.Context, f func() (R, error), getZeroValue fun
 		}
 
 		if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
-			tflog.Trace(ctx, fmt.Sprintf("Rate limited, waiting %f", rateLimitedError.RetryAfter.Seconds()), map[string]any{})
-
 			select {
 			case <-time.After(rateLimitedError.RetryAfter):
-				tflog.Trace(ctx, "Rate limit wait complete", map[string]any{})
 			case <-ctx.Done():
 				return getZeroValue(), ctx.Err()
 			}
