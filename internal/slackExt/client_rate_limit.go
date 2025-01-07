@@ -33,13 +33,13 @@ func (c *clientRateLimit) GetUserInfo(user string) (result *slack.User, err erro
 }
 
 func (c *clientRateLimit) GetUserByEmail(email string) (*slack.User, error) {
-	return c.base.GetUserByEmail(email)
+	return rateLimit(func() (*slack.User, error) {
+		return c.base.GetUserByEmail(email)
+	})
 }
 
 func (c *clientRateLimit) GetUsersContext(ctx context.Context) ([]slack.User, error) {
-	return rateLimit(func() ([]slack.User, error) {
-		return c.base.GetUsersContext(ctx)
-	})
+	return c.base.GetUsersContext(ctx)
 }
 
 func (c *clientRateLimit) GetUserGroups(options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error) {
