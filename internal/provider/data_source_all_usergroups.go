@@ -115,7 +115,7 @@ func (d *AllUserGroupsDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	userGroups, err := d.client.GetUserGroups(slack.GetUserGroupsOptionIncludeUsers(true))
+	userGroups, err := d.client.GetUserGroups(ctx, slack.GetUserGroupsOptionIncludeUsers(true))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Client Error",

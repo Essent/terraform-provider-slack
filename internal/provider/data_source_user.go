@@ -97,9 +97,9 @@ func (d *UserDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	)
 
 	if !data.ID.IsNull() {
-		user, err = d.client.GetUserInfo(data.ID.ValueString())
+		user, err = d.client.GetUserInfo(ctx, data.ID.ValueString())
 	} else {
-		user, err = d.client.GetUserByEmail(data.Email.ValueString())
+		user, err = d.client.GetUserByEmail(ctx, data.Email.ValueString())
 	}
 
 	if err != nil {

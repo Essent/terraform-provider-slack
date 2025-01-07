@@ -7,10 +7,10 @@ import (
 )
 
 type Client interface {
-	GetUserInfo(user string) (*slack.User, error)
-	GetUserByEmail(email string) (*slack.User, error)
+	GetUserInfo(ctx context.Context, user string) (*slack.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*slack.User, error)
 	GetUsersContext(ctx context.Context) ([]slack.User, error)
-	GetUserGroups(options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error)
+	GetUserGroups(ctx context.Context, options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error)
 }
 
 func New(base *slack.Client) Client {
