@@ -14,22 +14,26 @@ type clientRateLimit struct {
 }
 
 func rateLimit[R any](ctx context.Context, f func() (R, error), getZeroValue func() R) (result R, err error) {
-	for err != nil {
+	for {
 		result, err = f()
+
+		if err == nil {
+			return result, nil
+		}
 
 		if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
 			tflog.Trace(ctx, fmt.Sprintf("Rate limited, waiting %f", rateLimitedError.RetryAfter.Seconds()), map[string]any{})
+
 			select {
 			case <-time.After(rateLimitedError.RetryAfter):
 				tflog.Trace(ctx, "Rate limit wait complete", map[string]any{})
-				err = nil
 			case <-ctx.Done():
 				return getZeroValue(), ctx.Err()
 			}
+		} else {
+			return getZeroValue(), err
 		}
 	}
-
-	return result, err
 }
 
 func (c *clientRateLimit) GetUserInfo(ctx context.Context, user string) (result *slack.User, err error) {
@@ -51,5 +55,5 @@ func (c *clientRateLimit) GetUsersContext(ctx context.Context) ([]slack.User, er
 func (c *clientRateLimit) GetUserGroups(ctx context.Context, options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error) {
 	return rateLimit(ctx, func() ([]slack.UserGroup, error) {
 		return c.base.GetUserGroups(ctx, options...)
-	}, func() []slack.UserGroup { return nil })
+	}, func() []slack.UserGroup { return []slack.UserGroup{} })
 }
