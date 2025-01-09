@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package slackExt
 
 import (
@@ -11,6 +14,7 @@ type Client interface {
 	GetUserByEmail(ctx context.Context, email string) (*slack.User, error)
 	GetUsersContext(ctx context.Context) ([]slack.User, error)
 	GetUserGroups(ctx context.Context, options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error)
+	GetConversationInfo(ctx context.Context, input *slack.GetConversationInfoInput) (*slack.Channel, error)
 }
 
 func New(base *slack.Client) Client {

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package slackExt
 
 import (
@@ -24,4 +27,8 @@ func (c *clientImpl) GetUsersContext(ctx context.Context) ([]slack.User, error) 
 
 func (c *clientImpl) GetUserGroups(ctx context.Context, options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error) {
 	return c.base.GetUserGroupsContext(ctx, options...)
+}
+
+func (c *clientImpl) GetConversationInfo(ctx context.Context, input *slack.GetConversationInfoInput) (*slack.Channel, error) {
+	return c.base.GetConversationInfoContext(ctx, input)
 }
