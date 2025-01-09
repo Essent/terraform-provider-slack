@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package slackExt
 
 import (
@@ -14,7 +17,6 @@ type clientRateLimit struct {
 func rateLimit[R any](ctx context.Context, f func() (R, error), getZeroValue func() R) (result R, err error) {
 	for {
 		result, err = f()
-
 		if err == nil {
 			return result, nil
 		}
@@ -51,4 +53,10 @@ func (c *clientRateLimit) GetUserGroups(ctx context.Context, options ...slack.Ge
 	return rateLimit(ctx, func() ([]slack.UserGroup, error) {
 		return c.base.GetUserGroups(ctx, options...)
 	}, func() []slack.UserGroup { return []slack.UserGroup{} })
+}
+
+func (c *clientRateLimit) GetConversationInfo(ctx context.Context, input *slack.GetConversationInfoInput) (result *slack.Channel, err error) {
+	return rateLimit(ctx, func() (*slack.Channel, error) {
+		return c.base.GetConversationInfo(ctx, input)
+	}, func() *slack.Channel { return nil })
 }

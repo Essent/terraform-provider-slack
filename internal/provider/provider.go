@@ -100,6 +100,7 @@ func (p *SlackProvider) DataSources(ctx context.Context) []func() datasource.Dat
 		NewUserDataSource,
 		NewAllUsersDataSource,
 		NewAllUserGroupsDataSource,
+		NewConversationDataSource,
 	}
 }
 
