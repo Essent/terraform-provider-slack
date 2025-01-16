@@ -50,6 +50,21 @@ func (mr *MockClientMockRecorder) AuthTest(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthTest", reflect.TypeOf((*MockClient)(nil).AuthTest), ctx)
 }
 
+// GetConversationInfo mocks base method.
+func (m *MockClient) GetConversationInfo(ctx context.Context, input *slack.GetConversationInfoInput) (*slack.Channel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConversationInfo", ctx, input)
+	ret0, _ := ret[0].(*slack.Channel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConversationInfo indicates an expected call of GetConversationInfo.
+func (mr *MockClientMockRecorder) GetConversationInfo(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConversationInfo", reflect.TypeOf((*MockClient)(nil).GetConversationInfo), ctx, input)
+}
+
 // GetUserByEmail mocks base method.
 func (m *MockClient) GetUserByEmail(ctx context.Context, email string) (*slack.User, error) {
 	m.ctrl.T.Helper()
