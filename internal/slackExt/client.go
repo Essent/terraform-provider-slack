@@ -15,6 +15,12 @@ type Client interface {
 	GetUsersContext(ctx context.Context) ([]slack.User, error)
 	GetUserGroups(ctx context.Context, options ...slack.GetUserGroupsOption) ([]slack.UserGroup, error)
 	GetConversationInfo(ctx context.Context, input *slack.GetConversationInfoInput) (*slack.Channel, error)
+
+	CreateUserGroup(ctx context.Context, userGroup slack.UserGroup) (slack.UserGroup, error)
+	DisableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error)
+	EnableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error)
+	UpdateUserGroup(ctx context.Context, userGroupID string, options ...slack.UpdateUserGroupsOption) (slack.UserGroup, error)
+	UpdateUserGroupMembers(ctx context.Context, userGroup string, members string) (slack.UserGroup, error)
 }
 
 func New(base *slack.Client) Client {

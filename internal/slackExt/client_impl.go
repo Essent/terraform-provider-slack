@@ -32,3 +32,23 @@ func (c *clientImpl) GetUserGroups(ctx context.Context, options ...slack.GetUser
 func (c *clientImpl) GetConversationInfo(ctx context.Context, input *slack.GetConversationInfoInput) (*slack.Channel, error) {
 	return c.base.GetConversationInfoContext(ctx, input)
 }
+
+func (c *clientImpl) CreateUserGroup(ctx context.Context, userGroup slack.UserGroup) (slack.UserGroup, error) {
+	return c.base.CreateUserGroupContext(ctx, userGroup)
+}
+
+func (c *clientImpl) DisableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error) {
+	return c.base.DisableUserGroupContext(ctx, userGroup)
+}
+
+func (c *clientImpl) EnableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error) {
+	return c.base.EnableUserGroupContext(ctx, userGroup)
+}
+
+func (c *clientImpl) UpdateUserGroup(ctx context.Context, userGroupID string, options ...slack.UpdateUserGroupsOption) (slack.UserGroup, error) {
+	return c.base.UpdateUserGroupContext(ctx, userGroupID, options...)
+}
+
+func (c *clientImpl) UpdateUserGroupMembers(ctx context.Context, userGroup string, members string) (slack.UserGroup, error) {
+	return c.base.UpdateUserGroupMembersContext(ctx, userGroup, members)
+}

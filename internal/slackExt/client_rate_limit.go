@@ -60,3 +60,33 @@ func (c *clientRateLimit) GetConversationInfo(ctx context.Context, input *slack.
 		return c.base.GetConversationInfo(ctx, input)
 	}, func() *slack.Channel { return nil })
 }
+
+func (c *clientRateLimit) CreateUserGroup(ctx context.Context, userGroup slack.UserGroup) (slack.UserGroup, error) {
+	return rateLimit(ctx, func() (slack.UserGroup, error) {
+		return c.base.CreateUserGroup(ctx, userGroup)
+	}, func() slack.UserGroup { return slack.UserGroup{} })
+}
+
+func (c *clientRateLimit) DisableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error) {
+	return rateLimit(ctx, func() (slack.UserGroup, error) {
+		return c.base.DisableUserGroup(ctx, userGroup)
+	}, func() slack.UserGroup { return slack.UserGroup{} })
+}
+
+func (c *clientRateLimit) EnableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error) {
+	return rateLimit(ctx, func() (slack.UserGroup, error) {
+		return c.base.EnableUserGroup(ctx, userGroup)
+	}, func() slack.UserGroup { return slack.UserGroup{} })
+}
+
+func (c *clientRateLimit) UpdateUserGroup(ctx context.Context, userGroupID string, options ...slack.UpdateUserGroupsOption) (slack.UserGroup, error) {
+	return rateLimit(ctx, func() (slack.UserGroup, error) {
+		return c.base.UpdateUserGroup(ctx, userGroupID, options...)
+	}, func() slack.UserGroup { return slack.UserGroup{} })
+}
+
+func (c *clientRateLimit) UpdateUserGroupMembers(ctx context.Context, userGroup string, members string) (slack.UserGroup, error) {
+	return rateLimit(ctx, func() (slack.UserGroup, error) {
+		return c.base.UpdateUserGroupMembers(ctx, userGroup, members)
+	}, func() slack.UserGroup { return slack.UserGroup{} })
+}
