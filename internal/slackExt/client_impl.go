@@ -13,6 +13,10 @@ type clientImpl struct {
 	base *slack.Client
 }
 
+func (c *clientImpl) AuthTest(ctx context.Context) (*slack.AuthTestResponse, error) {
+	return c.base.AuthTestContext(ctx)
+}
+
 func (c *clientImpl) GetUserInfo(ctx context.Context, user string) (*slack.User, error) {
 	return c.base.GetUserInfoContext(ctx, user)
 }
