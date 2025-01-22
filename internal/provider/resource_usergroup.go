@@ -260,12 +260,14 @@ func (r *UserGroupResource) Create(
 		plan.ID = types.StringValue(created.ID)
 	}
 
-	if len(users) > 0 {
-		_, err := r.client.UpdateUserGroupMembers(ctx, plan.ID.ValueString(), strings.Join(users, ","))
-		if err != nil {
-			resp.Diagnostics.AddError("Members Update Error", fmt.Sprintf("Could not update usergroup members: %s", err))
-			return
-		}
+	usersParam := strings.Join(users, ",")
+	if len(users) == 0 {
+		usersParam = "[]"
+	}
+	_, err = r.client.UpdateUserGroupMembers(ctx, plan.ID.ValueString(), usersParam)
+	if err != nil {
+		resp.Diagnostics.AddError("Members Update Error", fmt.Sprintf("Could not update usergroup members: %s", err))
+		return
 	}
 
 	if err := r.readIntoModel(ctx, &plan); err != nil {
