@@ -9,12 +9,15 @@ import (
 	"strings"
 
 	"github.com/essent/terraform-provider-slack/internal/slackExt"
-
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -74,24 +77,32 @@ func (r *UserGroupResource) Schema(
 			"description": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				Default:  stringdefault.StaticString(""),
 			},
 			"handle": schema.StringAttribute{
 				Optional: true,
-				Computed: true,
 			},
 			"channels": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
 				Description: "Channels shared by the user group.",
+				Default: listdefault.StaticValue(
+					types.ListValueMust(types.StringType, []attr.Value{}),
+				),
 			},
 			"users": schema.ListAttribute{
-				ElementType:         types.StringType,
-				Optional:            true,
-				Computed:            true,
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				Default: listdefault.StaticValue(
+					types.ListValueMust(types.StringType, []attr.Value{}),
+				),
 				MarkdownDescription: "List of user IDs in the user group.",
 			},
 			"prevent_duplicate_names": schema.BoolAttribute{
+				Default:     booldefault.StaticBool(false),
+				Computed:    true,
 				Optional:    true,
 				Description: "If true, the plan fails if there's an enabled user group with the same name or handle (checked during plan).",
 			},
@@ -326,8 +337,12 @@ func (r *UserGroupResource) Update(
 		return
 	}
 
-	if !plan.Users.Equal(state.Users) && len(users) > 0 {
-		_, err = r.client.UpdateUserGroupMembers(ctx, state.ID.ValueString(), strings.Join(users, ","))
+	if !plan.Users.Equal(state.Users) {
+		usersParam := strings.Join(users, ",")
+		if len(users) == 0 {
+			usersParam = "[]"
+		}
+		_, err = r.client.UpdateUserGroupMembers(ctx, state.ID.ValueString(), usersParam)
 		if err != nil {
 			resp.Diagnostics.AddError("Members Update Error", fmt.Sprintf("Could not update usergroup members: %s", err))
 			return
@@ -386,7 +401,7 @@ func (r *UserGroupResource) readIntoModel(ctx context.Context, model *UserGroupR
 
 func listToStringSlice(l types.List) []string {
 	if l.IsNull() || l.IsUnknown() {
-		return nil
+		return []string{}
 	}
 	elems := l.Elements()
 	result := make([]string, 0, len(elems))
