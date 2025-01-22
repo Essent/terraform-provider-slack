@@ -23,8 +23,9 @@ import (
 )
 
 var (
-	_ resource.Resource                = &UserGroupResource{}
-	_ resource.ResourceWithImportState = &UserGroupResource{}
+	_ resource.Resource                   = &UserGroupResource{}
+	_ resource.ResourceWithImportState    = &UserGroupResource{}
+	_ resource.ResourceWithValidateConfig = &UserGroupResource{}
 )
 
 func NewUserGroupResource() resource.Resource {
@@ -36,12 +37,13 @@ type UserGroupResource struct {
 }
 
 type UserGroupResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Handle      types.String `tfsdk:"handle"`
-	Channels    types.List   `tfsdk:"channels"`
-	Users       types.List   `tfsdk:"users"`
+	ID                    types.String `tfsdk:"id"`
+	Name                  types.String `tfsdk:"name"`
+	Description           types.String `tfsdk:"description"`
+	Handle                types.String `tfsdk:"handle"`
+	Channels              types.List   `tfsdk:"channels"`
+	Users                 types.List   `tfsdk:"users"`
+	PreventDuplicateNames types.Bool   `tfsdk:"prevent_duplicate_names"`
 }
 
 func (r *UserGroupResource) Metadata(
@@ -89,6 +91,10 @@ func (r *UserGroupResource) Schema(
 				Computed:            true,
 				MarkdownDescription: "List of user IDs in the user group.",
 			},
+			"prevent_duplicate_names": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If true, the plan fails if there's an enabled user group with the same name or handle (checked during plan).",
+			},
 		},
 	}
 }
@@ -109,6 +115,53 @@ func (r *UserGroupResource) Configure(
 	r.client = pd.Client
 }
 
+func (r *UserGroupResource) ValidateConfig(
+	ctx context.Context,
+	req resource.ValidateConfigRequest,
+	resp *resource.ValidateConfigResponse,
+) {
+	if r.client == nil {
+		return
+	}
+
+	var plan UserGroupResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	newResource := plan.ID.IsNull() || plan.ID.IsUnknown()
+	if !plan.PreventDuplicateNames.ValueBool() || !newResource {
+		return
+	}
+
+	name := plan.Name.ValueString()
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() && name != "" {
+		existingByName, err := findUserGroupByField(ctx, name, "name", false, r.client)
+		if err == nil {
+			resp.Diagnostics.AddError(
+				"Conflict: Existing Enabled Group With Same Name",
+				fmt.Sprintf("An enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID),
+			)
+		} else if !strings.Contains(err.Error(), "no usergroup with name") {
+			resp.Diagnostics.AddError("Error Checking Name Conflict", err.Error())
+		}
+	}
+
+	handle := plan.Handle.ValueString()
+	if !plan.Handle.IsNull() && !plan.Handle.IsUnknown() && handle != "" {
+		existingByHandle, err := findUserGroupByField(ctx, handle, "handle", false, r.client)
+		if err == nil {
+			resp.Diagnostics.AddError(
+				"Conflict: Existing Enabled Group With Same Handle",
+				fmt.Sprintf("An enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID),
+			)
+		} else if !strings.Contains(err.Error(), "no usergroup with handle") {
+			resp.Diagnostics.AddError("Error Checking Handle Conflict", err.Error())
+		}
+	}
+}
+
 func (r *UserGroupResource) Create(
 	ctx context.Context,
 	req resource.CreateRequest,
@@ -124,13 +177,16 @@ func (r *UserGroupResource) Create(
 		plan.Handle = plan.Name
 	}
 
+	desiredName := plan.Name.ValueString()
+	desiredHandle := plan.Handle.ValueString()
+
 	channels := listToStringSlice(plan.Channels)
 	users := listToStringSlice(plan.Users)
 
 	createReq := slack.UserGroup{
-		Name:        plan.Name.ValueString(),
+		Name:        desiredName,
 		Description: plan.Description.ValueString(),
-		Handle:      plan.Handle.ValueString(),
+		Handle:      desiredHandle,
 		Prefs: slack.UserGroupPrefs{
 			Channels: channels,
 		},
@@ -138,27 +194,57 @@ func (r *UserGroupResource) Create(
 
 	created, err := r.client.CreateUserGroup(ctx, createReq)
 	if err != nil {
-		if err.Error() == "name_already_exists" || err.Error() == "handle_already_exists" {
-			existingGroup, err2 := findGroupByName(ctx, plan.Name.ValueString(), true, r.client)
+		var existingGroup slack.UserGroup
+		var err2 error
+		if err.Error() == "name_already_exists" {
+			existingGroup, err2 = findUserGroupByField(ctx, desiredName, "name", true, r.client)
 			if err2 != nil {
-				resp.Diagnostics.AddError("Create Error", fmt.Sprintf("Could not find existing group: %s", err2))
+				resp.Diagnostics.AddError(
+					"Create Error",
+					fmt.Sprintf("Slack returned %q, then could not find group: %s", err.Error(), err2),
+				)
 				return
 			}
-			_, err2 = r.client.EnableUserGroup(ctx, existingGroup.ID)
-			if err2 != nil && err2.Error() != "already_enabled" {
-				resp.Diagnostics.AddError("Enable Error", fmt.Sprintf("Could not enable usergroup %s: %s", existingGroup.ID, err2))
-				return
-			}
-			_, err2 = r.client.UpdateUserGroup(ctx, existingGroup.ID)
+		}
+		if err.Error() == "handle_already_exists" {
+			existingGroup, err2 = findUserGroupByField(ctx, desiredHandle, "handle", true, r.client)
 			if err2 != nil {
-				resp.Diagnostics.AddError("Update Error", fmt.Sprintf("Could not update usergroup %s: %s", existingGroup.ID, err2))
+				resp.Diagnostics.AddError(
+					"Create Error",
+					fmt.Sprintf("Slack returned %q, then could not find group: %s", err.Error(), err2),
+				)
 				return
 			}
-			plan.ID = types.StringValue(existingGroup.ID)
-		} else {
-			resp.Diagnostics.AddError("Create Error", fmt.Sprintf("Error creating usergroup: %s", err))
+		}
+
+		if existingGroup.DateDelete == 0 {
+			resp.Diagnostics.AddError(
+				"Create Error",
+				fmt.Sprintf(
+					"Conflict when creating group '%s': %q (ID: %s). Cannot reuse an enabled group.",
+					desiredName, err.Error(), existingGroup.ID,
+				),
+			)
 			return
 		}
+
+		_, err2 = r.client.EnableUserGroup(ctx, existingGroup.ID)
+		if err2 != nil && err2.Error() != "already_enabled" {
+			resp.Diagnostics.AddError("Enable Error", fmt.Sprintf("Could not enable usergroup %s: %s", existingGroup.ID, err2))
+			return
+		}
+		opts := []slack.UpdateUserGroupsOption{
+			slack.UpdateUserGroupsOptionName(plan.Name.ValueString()),
+			slack.UpdateUserGroupsOptionHandle(plan.Handle.ValueString()),
+			slack.UpdateUserGroupsOptionDescription(&[]string{plan.Description.ValueString()}[0]),
+			slack.UpdateUserGroupsOptionChannels(channels),
+		}
+		_, err2 = r.client.UpdateUserGroup(ctx, existingGroup.ID, opts...)
+		if err2 != nil {
+			resp.Diagnostics.AddError("Update Error", fmt.Sprintf("Could not update usergroup %s: %s", existingGroup.ID, err2))
+			return
+		}
+		plan.ID = types.StringValue(existingGroup.ID)
 	} else {
 		plan.ID = types.StringValue(created.ID)
 	}
@@ -317,7 +403,6 @@ func stringSliceToList(list []string) types.List {
 		emptyVal, _ := types.ListValue(types.StringType, []attr.Value{})
 		return emptyVal
 	}
-
 	attrValues := make([]attr.Value, len(list))
 	for i, s := range list {
 		attrValues[i] = types.StringValue(s)
@@ -338,9 +423,9 @@ func findGroupByID(groups []slack.UserGroup, id string) *slack.UserGroup {
 	return nil
 }
 
-func findGroupByName(
+func findUserGroupByField(
 	ctx context.Context,
-	name string,
+	searchVal, searchField string,
 	includeDisabled bool,
 	client slackExt.Client,
 ) (slack.UserGroup, error) {
@@ -351,12 +436,28 @@ func findGroupByName(
 	if err != nil {
 		return slack.UserGroup{}, err
 	}
+
 	for _, g := range groups {
-		if g.Name == name {
-			return g, nil
+		var matches bool
+		switch searchField {
+		case "name":
+			matches = (g.Name == searchVal)
+		case "handle":
+			matches = (g.Handle == searchVal)
+		default:
+			continue
+		}
+
+		if matches {
+			if !includeDisabled && g.DateDelete == 0 {
+				return g, nil
+			} else if includeDisabled {
+				return g, nil
+			}
 		}
 	}
-	return slack.UserGroup{}, fmt.Errorf("no usergroup with name %q found", name)
+
+	return slack.UserGroup{}, fmt.Errorf("no usergroup with %s %q found", searchField, searchVal)
 }
 
 func setStateFromUserGroup(ug *slack.UserGroup, model *UserGroupResourceModel) {
