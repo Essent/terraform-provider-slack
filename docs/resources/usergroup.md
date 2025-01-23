@@ -17,13 +17,13 @@ Manages a Slack user group.
 
 ### Required
 
+- `handle` (String)
 - `name` (String)
 
 ### Optional
 
 - `channels` (List of String) Channels shared by the user group.
 - `description` (String)
-- `handle` (String)
 - `prevent_duplicate_names` (Boolean) If true, the plan fails if there's an enabled user group with the same name or handle (checked during plan).
 - `users` (List of String) List of user IDs in the user group.
 

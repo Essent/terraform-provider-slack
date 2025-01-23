@@ -80,7 +80,7 @@ func (r *UserGroupResource) Schema(
 				Default:  stringdefault.StaticString(""),
 			},
 			"handle": schema.StringAttribute{
-				Optional: true,
+				Required: true,
 			},
 			"channels": schema.ListAttribute{
 				ElementType: types.StringType,
@@ -98,7 +98,7 @@ func (r *UserGroupResource) Schema(
 				Default: listdefault.StaticValue(
 					types.ListValueMust(types.StringType, []attr.Value{}),
 				),
-				MarkdownDescription: "List of user IDs in the user group.",
+				Description: "List of user IDs in the user group.",
 			},
 			"prevent_duplicate_names": schema.BoolAttribute{
 				Default:     booldefault.StaticBool(false),
@@ -184,20 +184,13 @@ func (r *UserGroupResource) Create(
 		return
 	}
 
-	if plan.Handle.IsNull() || plan.Handle.ValueString() == "" {
-		plan.Handle = plan.Name
-	}
-
-	desiredName := plan.Name.ValueString()
-	desiredHandle := plan.Handle.ValueString()
-
 	channels := listToStringSlice(plan.Channels)
 	users := listToStringSlice(plan.Users)
 
 	createReq := slack.UserGroup{
-		Name:        desiredName,
+		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
-		Handle:      desiredHandle,
+		Handle:      plan.Handle.ValueString(),
 		Prefs: slack.UserGroupPrefs{
 			Channels: channels,
 		},
@@ -208,7 +201,7 @@ func (r *UserGroupResource) Create(
 		var existingGroup slack.UserGroup
 		var err2 error
 		if err.Error() == "name_already_exists" {
-			existingGroup, err2 = findUserGroupByField(ctx, desiredName, "name", true, r.client)
+			existingGroup, err2 = findUserGroupByField(ctx, createReq.Name, "name", true, r.client)
 			if err2 != nil {
 				resp.Diagnostics.AddError(
 					"Create Error",
@@ -218,7 +211,7 @@ func (r *UserGroupResource) Create(
 			}
 		}
 		if err.Error() == "handle_already_exists" {
-			existingGroup, err2 = findUserGroupByField(ctx, desiredHandle, "handle", true, r.client)
+			existingGroup, err2 = findUserGroupByField(ctx, createReq.Handle, "handle", true, r.client)
 			if err2 != nil {
 				resp.Diagnostics.AddError(
 					"Create Error",
@@ -233,7 +226,7 @@ func (r *UserGroupResource) Create(
 				"Create Error",
 				fmt.Sprintf(
 					"Conflict when creating group '%s': %q (ID: %s). Cannot reuse an enabled group.",
-					desiredName, err.Error(), existingGroup.ID,
+					createReq.Name, err.Error(), existingGroup.ID,
 				),
 			)
 			return
@@ -317,10 +310,6 @@ func (r *UserGroupResource) Update(
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	if plan.Handle.IsNull() || plan.Handle.ValueString() == "" {
-		plan.Handle = plan.Name
 	}
 
 	channels := listToStringSlice(plan.Channels)
