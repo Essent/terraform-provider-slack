@@ -40,13 +40,13 @@ type UserGroupResource struct {
 }
 
 type UserGroupResourceModel struct {
-	ID                    types.String `tfsdk:"id"`
-	Name                  types.String `tfsdk:"name"`
-	Description           types.String `tfsdk:"description"`
-	Handle                types.String `tfsdk:"handle"`
-	Channels              types.List   `tfsdk:"channels"`
-	Users                 types.List   `tfsdk:"users"`
-	PreventDuplicateNames types.Bool   `tfsdk:"prevent_duplicate_names"`
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	Handle           types.String `tfsdk:"handle"`
+	Channels         types.List   `tfsdk:"channels"`
+	Users            types.List   `tfsdk:"users"`
+	PreventConflicts types.Bool   `tfsdk:"prevent_conflicts"`
 }
 
 func (r *UserGroupResource) Metadata(
@@ -100,11 +100,11 @@ func (r *UserGroupResource) Schema(
 				),
 				Description: "List of user IDs in the user group.",
 			},
-			"prevent_duplicate_names": schema.BoolAttribute{
+			"prevent_conflicts": schema.BoolAttribute{
 				Default:     booldefault.StaticBool(false),
 				Computed:    true,
 				Optional:    true,
-				Description: "If true, the plan fails if there's an enabled user group with the same name or handle (checked during plan).",
+				Description: "If true, the plan fails if there's an enabled user group with the same name or handle.",
 			},
 		},
 	}
@@ -142,7 +142,7 @@ func (r *UserGroupResource) ValidateConfig(
 	}
 
 	newResource := plan.ID.IsNull() || plan.ID.IsUnknown()
-	if !plan.PreventDuplicateNames.ValueBool() || !newResource {
+	if !plan.PreventConflicts.ValueBool() || !newResource {
 		return
 	}
 
