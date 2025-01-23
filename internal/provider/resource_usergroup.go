@@ -281,22 +281,16 @@ func (r *UserGroupResource) Read(
 		return
 	}
 
-	groups, err := r.client.GetUserGroups(ctx, slack.GetUserGroupsOptionIncludeUsers(true))
+	found, err := findUserGroupByField(ctx, state.ID.ValueString(), "id", false, r.client)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Error", fmt.Sprintf("Could not retrieve user groups: %s", err))
-		return
-	}
-
-	found := findGroupByID(groups, state.ID.ValueString())
-	if found == nil {
-		tflog.Warn(ctx, "User group not found in Slack; removing from state", map[string]interface{}{
+		tflog.Warn(ctx, "Usergroup not found in Slack; removing from state", map[string]interface{}{
 			"id": state.ID.ValueString(),
 		})
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	setStateFromUserGroup(found, &state)
+	setStateFromUserGroup(&found, &state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -375,18 +369,14 @@ func (r *UserGroupResource) ImportState(
 }
 
 func (r *UserGroupResource) readIntoModel(ctx context.Context, model *UserGroupResourceModel) error {
-	groups, err := r.client.GetUserGroups(ctx, slack.GetUserGroupsOptionIncludeUsers(true))
+	found, err := findUserGroupByField(ctx, model.ID.ValueString(), "id", false, r.client)
 	if err != nil {
-		return fmt.Errorf("could not read user group: %w", err)
-	}
-	found := findGroupByID(groups, model.ID.ValueString())
-	if found == nil {
 		tflog.Warn(ctx, "User group not found after create/update", map[string]interface{}{
 			"id": model.ID.ValueString(),
 		})
-		return nil
+		return fmt.Errorf("user group with ID %s not found: %w", model.ID.ValueString(), err)
 	}
-	setStateFromUserGroup(found, model)
+	setStateFromUserGroup(&found, model)
 	return nil
 }
 
@@ -420,15 +410,6 @@ func stringSliceToList(list []string) types.List {
 	return res
 }
 
-func findGroupByID(groups []slack.UserGroup, id string) *slack.UserGroup {
-	for i := range groups {
-		if groups[i].ID == id {
-			return &groups[i]
-		}
-	}
-	return nil
-}
-
 func findUserGroupByField(
 	ctx context.Context,
 	searchVal, searchField string,
@@ -450,6 +431,8 @@ func findUserGroupByField(
 			matches = (g.Name == searchVal)
 		case "handle":
 			matches = (g.Handle == searchVal)
+		case "id":
+			matches = (g.ID == searchVal)
 		default:
 			continue
 		}
