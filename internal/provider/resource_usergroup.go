@@ -26,9 +26,9 @@ import (
 )
 
 var (
-	_ resource.Resource                   = &UserGroupResource{}
-	_ resource.ResourceWithImportState    = &UserGroupResource{}
-	_ resource.ResourceWithValidateConfig = &UserGroupResource{}
+	_ resource.Resource                = &UserGroupResource{}
+	_ resource.ResourceWithImportState = &UserGroupResource{}
+	_ resource.ResourceWithModifyPlan  = &UserGroupResource{}
 )
 
 func NewUserGroupResource() resource.Resource {
@@ -126,17 +126,17 @@ func (r *UserGroupResource) Configure(
 	r.client = pd.Client
 }
 
-func (r *UserGroupResource) ValidateConfig(
-	ctx context.Context,
-	req resource.ValidateConfigRequest,
-	resp *resource.ValidateConfigResponse,
-) {
+func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if !req.State.Raw.IsNull() {
+		return
+	}
 	if r.client == nil {
 		return
 	}
 
 	var plan UserGroupResourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -147,29 +147,25 @@ func (r *UserGroupResource) ValidateConfig(
 	}
 
 	name := plan.Name.ValueString()
-	if !plan.Name.IsNull() && !plan.Name.IsUnknown() && name != "" {
-		existingByName, err := findUserGroupByField(ctx, name, "name", false, r.client)
-		if err == nil {
-			resp.Diagnostics.AddError(
-				"Conflict: Existing Enabled Group With Same Name",
-				fmt.Sprintf("An enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID),
-			)
-		} else if !strings.Contains(err.Error(), "no usergroup with name") {
-			resp.Diagnostics.AddError("Error Checking Name Conflict", err.Error())
-		}
+	existingByName, errNameLookup := findUserGroupByField(ctx, name, "name", false, r.client)
+	if errNameLookup == nil {
+		resp.Diagnostics.AddError(
+			"Conflict: Existing Enabled Group With Same Name",
+			fmt.Sprintf("An enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID),
+		)
+	} else if !strings.Contains(errNameLookup.Error(), "no usergroup with name") {
+		resp.Diagnostics.AddError("Error Checking Name Conflict", errNameLookup.Error())
 	}
 
 	handle := plan.Handle.ValueString()
-	if !plan.Handle.IsNull() && !plan.Handle.IsUnknown() && handle != "" {
-		existingByHandle, err := findUserGroupByField(ctx, handle, "handle", false, r.client)
-		if err == nil {
-			resp.Diagnostics.AddError(
-				"Conflict: Existing Enabled Group With Same Handle",
-				fmt.Sprintf("An enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID),
-			)
-		} else if !strings.Contains(err.Error(), "no usergroup with handle") {
-			resp.Diagnostics.AddError("Error Checking Handle Conflict", err.Error())
-		}
+	existingByHandle, errHandleLookup := findUserGroupByField(ctx, handle, "handle", false, r.client)
+	if errHandleLookup == nil {
+		resp.Diagnostics.AddError(
+			"Conflict: Existing Enabled Group With Same Handle",
+			fmt.Sprintf("An enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID),
+		)
+	} else if !strings.Contains(errHandleLookup.Error(), "no usergroup with handle") {
+		resp.Diagnostics.AddError("Error Checking Handle Conflict", errHandleLookup.Error())
 	}
 }
 
