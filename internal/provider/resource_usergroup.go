@@ -299,7 +299,7 @@ func (r *UserGroupResource) Read(
 		return
 	}
 
-	setStateFromUserGroup(&found, &state)
+	state.UpdateFromUserGroup(&found)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -364,7 +364,7 @@ func (r *UserGroupResource) readIntoModel(ctx context.Context, model *UserGroupR
 		})
 		return fmt.Errorf("user group with ID %s not found: %w", model.ID.ValueString(), err)
 	}
-	setStateFromUserGroup(&found, model)
+	model.UpdateFromUserGroup(&found)
 	return nil
 }
 
@@ -384,36 +384,6 @@ func (r *UserGroupResource) updateUserGroupMembership(
 		return fmt.Errorf("could not update usergroup members: %s", err)
 	}
 	return nil
-}
-
-func listToStringSlice(l types.List) []string {
-	if l.IsNull() || l.IsUnknown() {
-		return []string{}
-	}
-	elems := l.Elements()
-	result := make([]string, 0, len(elems))
-	for _, e := range elems {
-		if s, ok := e.(types.String); ok && !s.IsNull() && !s.IsUnknown() {
-			result = append(result, s.ValueString())
-		}
-	}
-	return result
-}
-
-func stringSliceToList(list []string) types.List {
-	if len(list) == 0 {
-		emptyVal, _ := types.ListValue(types.StringType, []attr.Value{})
-		return emptyVal
-	}
-	attrValues := make([]attr.Value, len(list))
-	for i, s := range list {
-		attrValues[i] = types.StringValue(s)
-	}
-	res, diags := types.ListValue(types.StringType, attrValues)
-	if diags.HasError() {
-		return types.ListNull(types.StringType)
-	}
-	return res
 }
 
 func findUserGroupByField(
@@ -453,13 +423,4 @@ func findUserGroupByField(
 	}
 
 	return slack.UserGroup{}, fmt.Errorf("no usergroup with %s %q found", searchField, searchVal)
-}
-
-func setStateFromUserGroup(ug *slack.UserGroup, model *UserGroupResourceModel) {
-	model.ID = types.StringValue(ug.ID)
-	model.Name = types.StringValue(ug.Name)
-	model.Description = types.StringValue(ug.Description)
-	model.Handle = types.StringValue(ug.Handle)
-	model.Channels = stringSliceToList(ug.Prefs.Channels)
-	model.Users = stringSliceToList(ug.Users)
 }
