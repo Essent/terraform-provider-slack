@@ -10,16 +10,16 @@ import (
 type dependenciesImpl struct {
 	c *gomock.Controller
 
-	mockSlackClient *mock_slackExt.MockClient
+	mock_slack_client *mock_slackExt.MockClient
 }
 
 func (d *dependenciesImpl) CreateSlackClient(token string) slackExt.Client {
-	if d.mockSlackClient != nil {
-		return d.mockSlackClient
+	if d.mock_slack_client != nil {
+		return d.mock_slack_client
 	}
 
-	d.mockSlackClient = mock_slackExt.NewMockClient(d.useMockController())
-	return d.mockSlackClient
+	d.mock_slack_client = mock_slackExt.NewMockClient(d.useMockController())
+	return d.mock_slack_client
 }
 
 func (d *dependenciesImpl) useMockController() *gomock.Controller {

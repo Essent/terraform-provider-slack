@@ -1,11 +1,13 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"regexp"
 	"testing"
 
 	"github.com/essent/terraform-provider-slack/internal/tb"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"go.uber.org/mock/gomock"
 )
@@ -183,4 +185,24 @@ func Test_DataSource_User_Error_When_Deleted_ByEmail(t *testing.T) {
 		// assert
 		ExpectError: regexp.MustCompile("User is deactivated"),
 	})
+}
+
+func Test_DataSource_User_Error_WhenSlackClientNil(t *testing.T) {
+	// arrange
+	res := &datasource.ConfigureResponse{}
+	req := datasource.ConfigureRequest{
+		ProviderData: &SlackProviderData{
+			Client: nil,
+		},
+	}
+
+	test_instance := UserDataSource{}
+
+	// act
+	test_instance.Configure(context.Background(), req, res)
+
+	// assert
+	if res.Diagnostics.Errors()[0].Summary() != "Invalid Provider Data" {
+		t.Errorf("Expected error summary to be 'Invalid Provider Data', got: %s", res.Diagnostics.Errors()[0].Summary())
+	}
 }

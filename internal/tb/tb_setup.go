@@ -11,7 +11,7 @@ var global dependenciesImpl = dependenciesImpl{}
 
 func Init(t *testing.T) {
 	global.c = gomock.NewController(t)
-	global.mockSlackClient = nil
+	global.mock_slack_client = nil
 }
 
 func Finish() {
@@ -22,5 +22,5 @@ func Finish() {
 
 func MockSlackClient() *mock_slackExt.MockClient {
 	global.CreateSlackClient("<TOKEN>")
-	return global.mockSlackClient
+	return global.mock_slack_client
 }

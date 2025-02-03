@@ -1,11 +1,13 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"regexp"
 	"testing"
 
 	"github.com/essent/terraform-provider-slack/internal/tb"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/slack-go/slack"
 	"go.uber.org/mock/gomock"
@@ -44,7 +46,7 @@ func Test_DataSource_AllUsers(t *testing.T) {
 	})
 }
 
-func Test_DataSource_Error_When_RetrievalFailed(t *testing.T) {
+func Test_DataSource_AllUsers_Error_When_RetrievalFailed(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -61,4 +63,24 @@ func Test_DataSource_Error_When_RetrievalFailed(t *testing.T) {
 		// assert
 		ExpectError: regexp.MustCompile(`<SLACK_ERROR>`),
 	})
+}
+
+func Test_DataSource_AllUsers_Error_WhenSlackClientNil(t *testing.T) {
+	// arrange
+	res := &datasource.ConfigureResponse{}
+	req := datasource.ConfigureRequest{
+		ProviderData: &SlackProviderData{
+			Client: nil,
+		},
+	}
+
+	test_instance := AllUsersDataSource{}
+
+	// act
+	test_instance.Configure(context.Background(), req, res)
+
+	// assert
+	if res.Diagnostics.Errors()[0].Summary() != "Invalid Provider Data" {
+		t.Errorf("Expected error summary to be 'Invalid Provider Data', got: %s", res.Diagnostics.Errors()[0].Summary())
+	}
 }
