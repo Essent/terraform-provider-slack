@@ -42,6 +42,13 @@ func (d *AllUsersDataSource) Metadata(ctx context.Context, req datasource.Metada
 
 func (d *AllUsersDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `Retrieve a list of all activated and non-bot Slack users.
+
+This datasource requires the following scopes:
+
+- users:read
+
+If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.`,
 		Attributes: map[string]schema.Attribute{
 			"total_users": schema.Int64Attribute{
 				Description: "Number of users returned.",

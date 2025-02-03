@@ -3,12 +3,12 @@
 page_title: "slack Provider"
 subcategory: ""
 description: |-
-  
+  The Slack provider allows you to manage Slack resources. Use it to create, read, update, and delete Slack entities.
 ---
 
 # slack Provider
 
-
+The Slack provider allows you to manage Slack resources. Use it to create, read, update, and delete Slack entities.
 
 ## Example Usage
 
@@ -23,4 +23,4 @@ provider "scaffolding" {
 
 ### Optional
 
-- `slack_token` (String, Sensitive) Slack token to authenticate API calls. Can also be set with the `SLACK_TOKEN` environment variable.
+- `slack_token` (String, Sensitive) The Slack token used for API authentication. It can be provided in the provider block or via the `SLACK_TOKEN` environment variable.

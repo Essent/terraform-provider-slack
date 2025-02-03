@@ -3,12 +3,24 @@
 page_title: "slack_conversation Data Source - slack"
 subcategory: ""
 description: |-
-  Retrieve information about a Slack conversation (channel) by its ID.
+  Retrieve information about a Slack conversation by its ID.
+  This datasource requires the following scopes:
+  channels:read (public channels)groups:read (private channels)im:read (optional)mpim:read (optional)
+  If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.
 ---
 
 # slack_conversation (Data Source)
 
-Retrieve information about a Slack conversation (channel) by its ID.
+Retrieve information about a Slack conversation by its ID.
+
+This datasource requires the following scopes:
+
+- channels:read (public channels)
+- groups:read (private channels)
+- im:read (optional)
+- mpim:read (optional)
+
+If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.
 
 
 
