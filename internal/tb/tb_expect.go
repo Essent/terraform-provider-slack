@@ -12,3 +12,12 @@ func ExpectString(value string) func(string) error {
 		return nil
 	}
 }
+
+func ExpectBool(value bool) func(string) error {
+	return func(actual string) error {
+		if actual != fmt.Sprintf("%t", value) {
+			return fmt.Errorf("expected %t, got %q", value, actual)
+		}
+		return nil
+	}
+}
