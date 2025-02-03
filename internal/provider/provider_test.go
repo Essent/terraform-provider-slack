@@ -6,7 +6,7 @@ package provider
 import (
 	"testing"
 
-	"github.com/essent/terraform-provider-slack/internal/testBed"
+	"github.com/essent/terraform-provider-slack/internal/tb"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -19,25 +19,25 @@ import (
 // CLI command executed to create a provider server to which the CLI can
 // reattach.
 var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
-	"slack": providerserver.NewProtocol6WithError(New("test", testBed.NewDependencies())()),
+	"slack": providerserver.NewProtocol6WithError(New("test", tb.NewDependencies())()),
 }
 
 func testAccPreCheck(t *testing.T) {
 	// You can add code here to run prior to any test case execution, for example assertions
 	// about the appropriate environment variables being set are common to see in a pre-check
 	// function.
-	testBed.Init(t)
+	tb.Init(t)
 }
 
 func testAccPreCheckWithSlackAuth(t *testing.T) {
 	testAccPreCheck(t)
 
-	m := testBed.MockSlackClient()
+	m := tb.MockSlackClient()
 	m.EXPECT().AuthTest(gomock.Any()).Return(&slack.AuthTestResponse{}, nil).AnyTimes()
 }
 
 func testConfig(t *testing.T, step resource.TestStep) {
-	defer testBed.Finish()
+	defer tb.Finish()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package testBed
+package tb
 
 import "github.com/slack-go/slack"
 

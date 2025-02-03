@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package testBed
+package tb
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/essent/terraform-provider-slack/internal/provider/dependencies"
 	"github.com/essent/terraform-provider-slack/internal/slackExt"
-	"github.com/essent/terraform-provider-slack/internal/testBed/mock_slackExt"
+	"github.com/essent/terraform-provider-slack/internal/tb/mock_slackExt"
 	"go.uber.org/mock/gomock"
 )
 
