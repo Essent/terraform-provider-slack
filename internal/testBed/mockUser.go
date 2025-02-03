@@ -28,6 +28,11 @@ func (b *UserBuilder) WithEmail(email string) *UserBuilder {
 	return b
 }
 
+func (b *UserBuilder) WithDeleted(deleted bool) *UserBuilder {
+	b.result.Deleted = deleted
+	return b
+}
+
 func NewUserBuilder() *UserBuilder {
 	return &UserBuilder{
 		result: &slack.User{},

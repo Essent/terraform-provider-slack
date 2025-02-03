@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 	slack "github.com/slack-go/slack"
 )
 
@@ -48,6 +48,51 @@ func (m *MockClient) AuthTest(ctx context.Context) (*slack.AuthTestResponse, err
 func (mr *MockClientMockRecorder) AuthTest(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthTest", reflect.TypeOf((*MockClient)(nil).AuthTest), ctx)
+}
+
+// CreateUserGroup mocks base method.
+func (m *MockClient) CreateUserGroup(ctx context.Context, userGroup slack.UserGroup) (slack.UserGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUserGroup", ctx, userGroup)
+	ret0, _ := ret[0].(slack.UserGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserGroup indicates an expected call of CreateUserGroup.
+func (mr *MockClientMockRecorder) CreateUserGroup(ctx, userGroup interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserGroup", reflect.TypeOf((*MockClient)(nil).CreateUserGroup), ctx, userGroup)
+}
+
+// DisableUserGroup mocks base method.
+func (m *MockClient) DisableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableUserGroup", ctx, userGroup)
+	ret0, _ := ret[0].(slack.UserGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DisableUserGroup indicates an expected call of DisableUserGroup.
+func (mr *MockClientMockRecorder) DisableUserGroup(ctx, userGroup interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableUserGroup", reflect.TypeOf((*MockClient)(nil).DisableUserGroup), ctx, userGroup)
+}
+
+// EnableUserGroup mocks base method.
+func (m *MockClient) EnableUserGroup(ctx context.Context, userGroup string) (slack.UserGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnableUserGroup", ctx, userGroup)
+	ret0, _ := ret[0].(slack.UserGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EnableUserGroup indicates an expected call of EnableUserGroup.
+func (mr *MockClientMockRecorder) EnableUserGroup(ctx, userGroup interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableUserGroup", reflect.TypeOf((*MockClient)(nil).EnableUserGroup), ctx, userGroup)
 }
 
 // GetConversationInfo mocks base method.
@@ -128,4 +173,39 @@ func (m *MockClient) GetUsersContext(ctx context.Context) ([]slack.User, error) 
 func (mr *MockClientMockRecorder) GetUsersContext(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersContext", reflect.TypeOf((*MockClient)(nil).GetUsersContext), ctx)
+}
+
+// UpdateUserGroup mocks base method.
+func (m *MockClient) UpdateUserGroup(ctx context.Context, userGroupID string, options ...slack.UpdateUserGroupsOption) (slack.UserGroup, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, userGroupID}
+	for _, a := range options {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateUserGroup", varargs...)
+	ret0, _ := ret[0].(slack.UserGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserGroup indicates an expected call of UpdateUserGroup.
+func (mr *MockClientMockRecorder) UpdateUserGroup(ctx, userGroupID interface{}, options ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, userGroupID}, options...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserGroup", reflect.TypeOf((*MockClient)(nil).UpdateUserGroup), varargs...)
+}
+
+// UpdateUserGroupMembers mocks base method.
+func (m *MockClient) UpdateUserGroupMembers(ctx context.Context, userGroup, members string) (slack.UserGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUserGroupMembers", ctx, userGroup, members)
+	ret0, _ := ret[0].(slack.UserGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUserGroupMembers indicates an expected call of UpdateUserGroupMembers.
+func (mr *MockClientMockRecorder) UpdateUserGroupMembers(ctx, userGroup, members interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUserGroupMembers", reflect.TypeOf((*MockClient)(nil).UpdateUserGroupMembers), ctx, userGroup, members)
 }

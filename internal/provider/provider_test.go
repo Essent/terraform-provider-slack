@@ -9,6 +9,9 @@ import (
 	"github.com/essent/terraform-provider-slack/internal/testBed"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/slack-go/slack"
+	"go.uber.org/mock/gomock"
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during
@@ -24,4 +27,23 @@ func testAccPreCheck(t *testing.T) {
 	// about the appropriate environment variables being set are common to see in a pre-check
 	// function.
 	testBed.Init(t)
+}
+
+func testAccPreCheckWithSlackAuth(t *testing.T) {
+	testAccPreCheck(t)
+
+	m := testBed.MockSlackClient()
+	m.EXPECT().AuthTest(gomock.Any()).Return(&slack.AuthTestResponse{}, nil).AnyTimes()
+}
+
+func testConfig(t *testing.T, step resource.TestStep) {
+	defer testBed.Finish()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithSlackAuth(t)
+		},
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps:                    []resource.TestStep{step},
+	})
 }

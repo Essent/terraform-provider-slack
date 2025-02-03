@@ -10,7 +10,7 @@ import (
 	"github.com/essent/terraform-provider-slack/internal/provider/dependencies"
 	"github.com/essent/terraform-provider-slack/internal/slackExt"
 	"github.com/essent/terraform-provider-slack/internal/testBed/mock_slackExt"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 type dependenciesImpl struct {
@@ -23,6 +23,7 @@ var global dependenciesImpl = dependenciesImpl{}
 
 func Init(t *testing.T) {
 	global.c = gomock.NewController(t)
+	global.mockSlackClient = nil
 }
 
 func Finish() {
