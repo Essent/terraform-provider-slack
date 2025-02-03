@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -13,7 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func Test_ByEmail(t *testing.T) {
+func Test_DataSource_User_ByEmail(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -44,7 +41,7 @@ func Test_ByEmail(t *testing.T) {
 	})
 }
 
-func Test_ByID(t *testing.T) {
+func Test_DataSource_User_ByID(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -75,7 +72,7 @@ func Test_ByID(t *testing.T) {
 	})
 }
 
-func Test_Error_When_IdAndEmail_BothSpecified(t *testing.T) {
+func Test_DataSource_User_Error_When_IdAndEmail_BothSpecified(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -100,7 +97,7 @@ func Test_Error_When_IdAndEmail_BothSpecified(t *testing.T) {
 	})
 }
 
-func Test_Error_When_RetrievalFailed_ByID(t *testing.T) {
+func Test_DataSource_User_Error_When_RetrievalFailed_ByID(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -121,7 +118,7 @@ func Test_Error_When_RetrievalFailed_ByID(t *testing.T) {
 	})
 }
 
-func Test_Error_When_RetrievalFailed_ByEmail(t *testing.T) {
+func Test_DataSource_User_Error_When_RetrievalFailed_ByEmail(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -142,7 +139,7 @@ func Test_Error_When_RetrievalFailed_ByEmail(t *testing.T) {
 	})
 }
 
-func Test_Error_When_Deleted_ByID(t *testing.T) {
+func Test_DataSource_User_Error_When_Deleted_ByID(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
@@ -165,7 +162,7 @@ func Test_Error_When_Deleted_ByID(t *testing.T) {
 	})
 }
 
-func Test_Error_When_Deleted_ByEmail(t *testing.T) {
+func Test_DataSource_User_Error_When_Deleted_ByEmail(t *testing.T) {
 	testConfig(t, resource.TestStep{
 		// arrange
 		PreConfig: func() {
