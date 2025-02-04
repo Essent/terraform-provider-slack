@@ -33,7 +33,8 @@ type SlackProviderModel struct {
 }
 
 type SlackProviderData struct {
-	Client slackExt.Client
+	Client  slackExt.Client
+	Queries slackExt.Queries
 }
 
 func (p *SlackProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -85,9 +86,10 @@ func (p *SlackProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		)
 		return
 	}
+	queries := p.dependencies.CreateSlackQueries(client)
 
-	resp.DataSourceData = &SlackProviderData{Client: client}
-	resp.ResourceData = &SlackProviderData{Client: client}
+	resp.DataSourceData = &SlackProviderData{Client: client, Queries: queries}
+	resp.ResourceData = &SlackProviderData{Client: client, Queries: queries}
 }
 
 func (p *SlackProvider) Resources(ctx context.Context) []func() resource.Resource {

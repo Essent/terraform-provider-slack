@@ -36,7 +36,8 @@ func NewUserGroupResource() resource.Resource {
 }
 
 type UserGroupResource struct {
-	client slackExt.Client
+	client  slackExt.Client
+	queries slackExt.Queries
 }
 
 type UserGroupResourceModel struct {
@@ -119,11 +120,13 @@ func (r *UserGroupResource) Configure(
 		return
 	}
 	pd, ok := req.ProviderData.(*SlackProviderData)
-	if !ok || pd.Client == nil {
+	if !ok || pd.Client == nil || pd.Queries == nil {
 		resp.Diagnostics.AddError("Invalid Provider Data", "Could not create Slack client.")
 		return
 	}
+
 	r.client = pd.Client
+	r.queries = pd.Queries
 }
 
 func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -147,7 +150,7 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 	}
 
 	name := plan.Name.ValueString()
-	existingByName, errNameLookup := findUserGroupByField(ctx, name, "name", false, r.client)
+	existingByName, errNameLookup := r.queries.FindUserGroupByField(ctx, "name", name, false)
 	if errNameLookup == nil {
 		resp.Diagnostics.AddError(
 			"Conflict: Existing Enabled Group With Same Name",
@@ -158,7 +161,7 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 	}
 
 	handle := plan.Handle.ValueString()
-	existingByHandle, errHandleLookup := findUserGroupByField(ctx, handle, "handle", false, r.client)
+	existingByHandle, errHandleLookup := r.queries.FindUserGroupByField(ctx, "handle", handle, false)
 	if errHandleLookup == nil {
 		resp.Diagnostics.AddError(
 			"Conflict: Existing Enabled Group With Same Handle",
@@ -206,7 +209,7 @@ func (r *UserGroupResource) Create(
 		var existingGroup slack.UserGroup
 		if lookupField != "" {
 			var errLookup error
-			existingGroup, errLookup = findUserGroupByField(ctx, lookupValue, lookupField, true, r.client)
+			existingGroup, errLookup = r.queries.FindUserGroupByField(ctx, lookupField, lookupValue, true)
 			if errLookup != nil {
 				resp.Diagnostics.AddError(
 					"Create Error",
@@ -290,7 +293,7 @@ func (r *UserGroupResource) Read(
 		return
 	}
 
-	found, err := findUserGroupByField(ctx, state.ID.ValueString(), "id", false, r.client)
+	found, err := r.queries.FindUserGroupByField(ctx, "id", state.ID.ValueString(), false)
 	if err != nil {
 		tflog.Warn(ctx, "Usergroup not found in Slack; removing from state", map[string]interface{}{
 			"id": state.ID.ValueString(),
@@ -357,7 +360,7 @@ func (r *UserGroupResource) ImportState(
 }
 
 func (r *UserGroupResource) readIntoModel(ctx context.Context, model *UserGroupResourceModel) error {
-	found, err := findUserGroupByField(ctx, model.ID.ValueString(), "id", false, r.client)
+	found, err := r.queries.FindUserGroupByField(ctx, "id", model.ID.ValueString(), false)
 	if err != nil {
 		tflog.Warn(ctx, "User group not found after create/update", map[string]interface{}{
 			"id": model.ID.ValueString(),
@@ -384,43 +387,4 @@ func (r *UserGroupResource) updateUserGroupMembership(
 		return fmt.Errorf("could not update usergroup members: %s", err)
 	}
 	return nil
-}
-
-func findUserGroupByField(
-	ctx context.Context,
-	searchVal, searchField string,
-	includeDisabled bool,
-	client slackExt.Client,
-) (slack.UserGroup, error) {
-	groups, err := client.GetUserGroups(ctx,
-		slack.GetUserGroupsOptionIncludeDisabled(includeDisabled),
-		slack.GetUserGroupsOptionIncludeUsers(true),
-	)
-	if err != nil {
-		return slack.UserGroup{}, err
-	}
-
-	for _, g := range groups {
-		var matches bool
-		switch searchField {
-		case "name":
-			matches = (g.Name == searchVal)
-		case "handle":
-			matches = (g.Handle == searchVal)
-		case "id":
-			matches = (g.ID == searchVal)
-		default:
-			continue
-		}
-
-		if matches {
-			if !includeDisabled && g.DateDelete == 0 {
-				return g, nil
-			} else if includeDisabled {
-				return g, nil
-			}
-		}
-	}
-
-	return slack.UserGroup{}, fmt.Errorf("no usergroup with %s %q found", searchField, searchVal)
 }
