@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
 	slack "github.com/slack-go/slack"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockQueries is a mock of Queries interface.
