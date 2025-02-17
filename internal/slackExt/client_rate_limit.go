@@ -33,6 +33,10 @@ func rateLimit[R any](ctx context.Context, f func() (R, error), getZeroValue fun
 	}
 }
 
+func (c *clientRateLimit) AuthTest(ctx context.Context) (*slack.AuthTestResponse, error) {
+	return c.base.AuthTest(ctx)
+}
+
 func (c *clientRateLimit) GetUserInfo(ctx context.Context, user string) (result *slack.User, err error) {
 	return rateLimit(ctx, func() (*slack.User, error) {
 		return c.base.GetUserInfo(ctx, user)
