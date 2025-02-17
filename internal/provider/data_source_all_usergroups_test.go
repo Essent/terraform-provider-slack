@@ -9,15 +9,16 @@ import (
 	"regexp"
 	"testing"
 
+	tr "github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/essent/terraform-provider-slack/internal/tb"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/slack-go/slack"
 	"go.uber.org/mock/gomock"
 )
 
 func Test_DataSource_AllUsergroups(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			ugbA := tb.NewUsergroupBuilder().WithChannels([]string{"<CHANNEL_A_A>", "<CHANNEL_A_B>"}).WithUsers([]string{"<USER_A_A>", "<USER_A_B>"})
@@ -39,49 +40,49 @@ func Test_DataSource_AllUsergroups(t *testing.T) {
 			data "slack_all_usergroups" "all_usersgroups" {}
 		`,
 		// assert
-		Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "total_usergroups"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.id"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.name"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.description"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.handle"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.0"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.1"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.0"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.1"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.id"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.name"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.description"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.handle"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.0"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.1"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.0"),
-			resource.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.1"),
+		Check: tr.ComposeTestCheckFunc(
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "total_usergroups"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.id"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.name"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.description"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.handle"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.0"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.1"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.0"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.1"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.id"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.name"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.description"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.handle"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.0"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.1"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.0"),
+			tr.TestCheckResourceAttrSet("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.1"),
 
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "total_usergroups", tb.ExpectString("2")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.id", tb.ExpectString("<ID_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.name", tb.ExpectString("<NAME_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.description", tb.ExpectString("<DESC_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.handle", tb.ExpectString("<HANDLE_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.0", tb.ExpectString("<CHANNEL_A_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.1", tb.ExpectString("<CHANNEL_A_B>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.0", tb.ExpectString("<USER_A_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.1", tb.ExpectString("<USER_A_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "total_usergroups", tb.ExpectString("2")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.id", tb.ExpectString("<ID_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.name", tb.ExpectString("<NAME_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.description", tb.ExpectString("<DESC_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.handle", tb.ExpectString("<HANDLE_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.0", tb.ExpectString("<CHANNEL_A_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.channels.1", tb.ExpectString("<CHANNEL_A_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.0", tb.ExpectString("<USER_A_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.0.users.1", tb.ExpectString("<USER_A_B>")),
 
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.id", tb.ExpectString("<ID_B>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.name", tb.ExpectString("<NAME_B>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.description", tb.ExpectString("<DESC_B>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.handle", tb.ExpectString("<HANDLE_B>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.0", tb.ExpectString("<CHANNEL_B_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.1", tb.ExpectString("<CHANNEL_B_B>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.0", tb.ExpectString("<USER_B_A>")),
-			resource.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.1", tb.ExpectString("<USER_B_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.id", tb.ExpectString("<ID_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.name", tb.ExpectString("<NAME_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.description", tb.ExpectString("<DESC_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.handle", tb.ExpectString("<HANDLE_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.0", tb.ExpectString("<CHANNEL_B_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.channels.1", tb.ExpectString("<CHANNEL_B_B>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.0", tb.ExpectString("<USER_B_A>")),
+			tr.TestCheckResourceAttrWith("data.slack_all_usergroups.all_usersgroups", "usergroups.1.users.1", tb.ExpectString("<USER_B_B>")),
 		),
 	})
 }
 
 func Test_DataSource_AllUsergroups_Error_When_RetrievalFailed(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			m := tb.MockSlackClient()

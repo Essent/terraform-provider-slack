@@ -9,14 +9,15 @@ import (
 	"regexp"
 	"testing"
 
+	tr "github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/essent/terraform-provider-slack/internal/tb"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"go.uber.org/mock/gomock"
 )
 
 func Test_DataSource_User_ByEmail(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			u := tb.NewUserBuilder().WithID("<ID>").WithName("<NAME>").WithEmail("<GIVEN_EMAIL>").Build()
@@ -34,20 +35,20 @@ func Test_DataSource_User_ByEmail(t *testing.T) {
 			}
 		`,
 		// assert
-		Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttrSet("data.slack_user.user_by_email", "id"),
-			resource.TestCheckResourceAttrSet("data.slack_user.user_by_email", "name"),
-			resource.TestCheckResourceAttrSet("data.slack_user.user_by_email", "email"),
+		Check: tr.ComposeTestCheckFunc(
+			tr.TestCheckResourceAttrSet("data.slack_user.user_by_email", "id"),
+			tr.TestCheckResourceAttrSet("data.slack_user.user_by_email", "name"),
+			tr.TestCheckResourceAttrSet("data.slack_user.user_by_email", "email"),
 
-			resource.TestCheckResourceAttrWith("data.slack_user.user_by_email", "id", tb.ExpectString("<ID>")),
-			resource.TestCheckResourceAttrWith("data.slack_user.user_by_email", "name", tb.ExpectString("<NAME>")),
-			resource.TestCheckResourceAttrWith("data.slack_user.user_by_email", "email", tb.ExpectString("<GIVEN_EMAIL>")),
+			tr.TestCheckResourceAttrWith("data.slack_user.user_by_email", "id", tb.ExpectString("<ID>")),
+			tr.TestCheckResourceAttrWith("data.slack_user.user_by_email", "name", tb.ExpectString("<NAME>")),
+			tr.TestCheckResourceAttrWith("data.slack_user.user_by_email", "email", tb.ExpectString("<GIVEN_EMAIL>")),
 		),
 	})
 }
 
 func Test_DataSource_User_ByID(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			u := tb.NewUserBuilder().WithID("<GIVEN_ID>").WithName("<NAME>").WithEmail("<EMAIL>").Build()
@@ -65,20 +66,20 @@ func Test_DataSource_User_ByID(t *testing.T) {
 			}
 		`,
 		// assert
-		Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttrSet("data.slack_user.user_by_id", "id"),
-			resource.TestCheckResourceAttrSet("data.slack_user.user_by_id", "name"),
-			resource.TestCheckResourceAttrSet("data.slack_user.user_by_id", "email"),
+		Check: tr.ComposeTestCheckFunc(
+			tr.TestCheckResourceAttrSet("data.slack_user.user_by_id", "id"),
+			tr.TestCheckResourceAttrSet("data.slack_user.user_by_id", "name"),
+			tr.TestCheckResourceAttrSet("data.slack_user.user_by_id", "email"),
 
-			resource.TestCheckResourceAttrWith("data.slack_user.user_by_id", "id", tb.ExpectString("<GIVEN_ID>")),
-			resource.TestCheckResourceAttrWith("data.slack_user.user_by_id", "name", tb.ExpectString("<NAME>")),
-			resource.TestCheckResourceAttrWith("data.slack_user.user_by_id", "email", tb.ExpectString("<EMAIL>")),
+			tr.TestCheckResourceAttrWith("data.slack_user.user_by_id", "id", tb.ExpectString("<GIVEN_ID>")),
+			tr.TestCheckResourceAttrWith("data.slack_user.user_by_id", "name", tb.ExpectString("<NAME>")),
+			tr.TestCheckResourceAttrWith("data.slack_user.user_by_id", "email", tb.ExpectString("<EMAIL>")),
 		),
 	})
 }
 
 func Test_DataSource_User_Error_When_IdAndEmail_BothSpecified(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			u := tb.NewUserBuilder().WithID("<GIVEN_ID>").WithName("<NAME>").WithEmail("<GIVEN_EMAIL>").Build()
@@ -103,7 +104,7 @@ func Test_DataSource_User_Error_When_IdAndEmail_BothSpecified(t *testing.T) {
 }
 
 func Test_DataSource_User_Error_When_RetrievalFailed_ByID(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			m := tb.MockSlackClient()
@@ -124,7 +125,7 @@ func Test_DataSource_User_Error_When_RetrievalFailed_ByID(t *testing.T) {
 }
 
 func Test_DataSource_User_Error_When_RetrievalFailed_ByEmail(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			m := tb.MockSlackClient()
@@ -145,7 +146,7 @@ func Test_DataSource_User_Error_When_RetrievalFailed_ByEmail(t *testing.T) {
 }
 
 func Test_DataSource_User_Error_When_Deleted_ByID(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			u := tb.NewUserBuilder().WithID("<GIVEN_ID>").WithName("<NAME>").WithEmail("<EMAIL>").WithDeleted(true).Build()
@@ -168,7 +169,7 @@ func Test_DataSource_User_Error_When_Deleted_ByID(t *testing.T) {
 }
 
 func Test_DataSource_User_Error_When_Deleted_ByEmail(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			u := tb.NewUserBuilder().WithID("<ID>").WithName("<NAME>").WithEmail("<GIVEN_EMAIL>").WithDeleted(true).Build()

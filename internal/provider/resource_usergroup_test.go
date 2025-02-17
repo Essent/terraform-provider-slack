@@ -11,6 +11,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
+// func Test_Resource_UserGroup(t *testing.T) {
+// 	testConfig(t, tr.TestStep{
+// 		// arrange
+// 		PreConfig: func() {
+
+// 		},
+// 	})
+// }
+
 func Test_Resource_UserGroup_Error_WhenSlackClientNil(t *testing.T) {
 	// arrange
 	res := &resource.ConfigureResponse{}

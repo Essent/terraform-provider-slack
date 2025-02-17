@@ -9,9 +9,10 @@ import (
 	"regexp"
 	"testing"
 
+	tr "github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/essent/terraform-provider-slack/internal/tb"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/slack-go/slack"
 	"go.uber.org/mock/gomock"
 )
@@ -24,7 +25,7 @@ func Test_DataSource_Conversation(t *testing.T) {
 
 	c := cb.Build()
 
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		PreConfig: func() {
 			expected_conversation_info_input := &slack.GetConversationInfoInput{
 				ChannelID:         "<GIVEN_ID>",
@@ -45,34 +46,34 @@ func Test_DataSource_Conversation(t *testing.T) {
 			}
 		`,
 		// assert
-		Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "channel_id"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "topic"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "purpose"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "created"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "creator"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_archived"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_shared"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_ext_shared"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_org_shared"),
-			resource.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_general"),
+		Check: tr.ComposeTestCheckFunc(
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "channel_id"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "topic"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "purpose"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "created"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "creator"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_archived"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_shared"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_ext_shared"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_org_shared"),
+			tr.TestCheckResourceAttrSet("data.slack_conversation.channel", "is_general"),
 
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "channel_id", tb.ExpectString("<GIVEN_ID>")),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "topic", tb.ExpectString("<TOPIC>")),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "purpose", tb.ExpectString("<PURPOSE>")),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "created", tb.ExpectString("1234567890")),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "creator", tb.ExpectString("<CREATOR>")),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_archived", tb.ExpectBool(c.IsArchived)),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_shared", tb.ExpectBool(c.IsShared)),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_ext_shared", tb.ExpectBool(c.IsExtShared)),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_org_shared", tb.ExpectBool(c.IsOrgShared)),
-			resource.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_general", tb.ExpectBool(c.IsGeneral)),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "channel_id", tb.ExpectString("<GIVEN_ID>")),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "topic", tb.ExpectString("<TOPIC>")),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "purpose", tb.ExpectString("<PURPOSE>")),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "created", tb.ExpectString("1234567890")),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "creator", tb.ExpectString("<CREATOR>")),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_archived", tb.ExpectBool(c.IsArchived)),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_shared", tb.ExpectBool(c.IsShared)),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_ext_shared", tb.ExpectBool(c.IsExtShared)),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_org_shared", tb.ExpectBool(c.IsOrgShared)),
+			tr.TestCheckResourceAttrWith("data.slack_conversation.channel", "is_general", tb.ExpectBool(c.IsGeneral)),
 		),
 	})
 }
 
 func Test_DataSource_Conversation_Error_When_RetrievalFailed(t *testing.T) {
-	testConfig(t, resource.TestStep{
+	testConfig(t, tr.TestStep{
 		// arrange
 		PreConfig: func() {
 			m := tb.MockSlackClient()
