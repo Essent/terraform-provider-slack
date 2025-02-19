@@ -43,7 +43,23 @@ Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
 
-Fill this in for each provider
+terraform {
+  required_providers {
+    slack = {
+      source = "essent/slack"
+    }
+  }
+}
+
+provider "slack" {
+   slack_token = "xoxb-123456789012-123456789012-123456789012-123456789012" # Or set the SLACK_TOKEN env var
+}
+
+resource "slack_usergroup" "hello_world" {
+  name              = "hello_world"
+  handle            = "hello_world"
+  description       = "hello_world"
+}
 
 ## Developing the Provider
 

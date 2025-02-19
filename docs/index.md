@@ -13,8 +13,8 @@ The Slack provider allows you to manage Slack resources. Use it to create, read,
 ## Example Usage
 
 ```terraform
-provider "scaffolding" {
-  # example configuration here
+provider "slack" {
+  slack_token = "xoxb-123456789012-123456789012-123456789012-123456789012" # Or set the SLACK_TOKEN env var
 }
 ```
 
