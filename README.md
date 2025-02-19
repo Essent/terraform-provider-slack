@@ -1,9 +1,9 @@
 # Terraform Provider Slack
 
-This provider manages Slack usergroups as a resource and provides data sources for other Slack objects (e.g., channels, users).
+This provider manages Slack usergroups as a resource and provides data sources for other Slack objects (e.g. channels, users).
 Compared to the original [provider](https://github.com/pablovarela/terraform-provider-slack) this version contains various changes:
 - Rebuilt around the terraform plugin framework
-- Added rate limit handling for all Slack API endpoints
+- Implemented rate limit handling for all Slack API endpoints
 - Improved handling of conflicts with existing usergroups
 - User datasources no longer return disabled/deleted users
 - Removed the need for costly lookups by introducing new datasources that return lists of usergroups/users
@@ -20,8 +20,8 @@ Some ideas for future improvements:
 ## Building The Provider
 
 1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
+2. Enter the repository directory
+3. Build the provider using the Go `install` command:
 
 ```shell
 go install
@@ -42,7 +42,7 @@ go mod tidy
 Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
-
+```terraform
 terraform {
   required_providers {
     slack = {
@@ -52,15 +52,15 @@ terraform {
 }
 
 provider "slack" {
-   slack_token = "xoxb-123456789012-123456789012-123456789012-123456789012" # Or set the SLACK_TOKEN env var
+  slack_token = "xoxb-123456789012-123456789012-123456789012-123456789012"
+  # Alternatively, set the SLACK_TOKEN env var
 }
 
 resource "slack_usergroup" "hello_world" {
-  name              = "hello_world"
-  handle            = "hello_world"
-  description       = "hello_world"
+  name   = "hello_world"
+  handle = "hello_world"
 }
-
+```
 ## Developing the Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
