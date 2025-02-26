@@ -132,10 +132,7 @@ func (r *UserGroupResource) Configure(
 }
 
 func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if !req.State.Raw.IsNull() {
-		return
-	}
-	if r.client == nil {
+	if r.client == nil || req.Plan.Raw.IsNull() {
 		return
 	}
 
@@ -146,13 +143,27 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 		return
 	}
 
-	newResource := plan.ID.IsNull() || plan.ID.IsUnknown()
-	if !plan.PreventConflicts.ValueBool() || !newResource {
+	if !plan.PreventConflicts.ValueBool() {
 		return
 	}
 
+	isUpdate := !req.State.Raw.IsNull()
+
+	if isUpdate {
+		var state UserGroupResourceModel
+		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if plan.Name.ValueString() == state.Name.ValueString() {
+			return
+		}
+	}
+
+	includeDisabled := isUpdate
+
 	name := plan.Name.ValueString()
-	existingByName, errNameLookup := findUserGroupByField(ctx, name, "name", false, r.client)
+	existingByName, errNameLookup := findUserGroupByField(ctx, name, "name", includeDisabled, r.client)
 	if errNameLookup == nil {
 		resp.Diagnostics.AddError(
 			"Conflict: Existing Enabled Group With Same Name",
@@ -163,7 +174,7 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 	}
 
 	handle := plan.Handle.ValueString()
-	existingByHandle, errHandleLookup := findUserGroupByField(ctx, handle, "handle", false, r.client)
+	existingByHandle, errHandleLookup := findUserGroupByField(ctx, handle, "handle", includeDisabled, r.client)
 	if errHandleLookup == nil {
 		resp.Diagnostics.AddError(
 			"Conflict: Existing Enabled Group With Same Handle",
