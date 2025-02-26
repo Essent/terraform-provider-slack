@@ -68,10 +68,7 @@ func (r *UserGroupResource) Schema(
 This resource requires the following scopes:
 
 - usergroups:write
-- usergroups:read
-
-If you get missing_scope errors while using this resource check the scopes against the documentation for the methods above.`,
-
+- usergroups:read`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,

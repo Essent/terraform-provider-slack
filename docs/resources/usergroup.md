@@ -6,7 +6,6 @@ description: |-
   Manages a Slack user group.
   This resource requires the following scopes:
   usergroups:writeusergroups:read
-  If you get missing_scope errors while using this resource check the scopes against the documentation for the methods above.
 ---
 
 # slack_usergroup (Resource)
@@ -17,8 +16,6 @@ This resource requires the following scopes:
 
 - usergroups:write
 - usergroups:read
-
-If you get missing_scope errors while using this resource check the scopes against the documentation for the methods above.
 
 
 

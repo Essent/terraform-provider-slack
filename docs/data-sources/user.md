@@ -6,7 +6,6 @@ description: |-
   Retrieve Slack user information. Either 'id' or 'email' must be specified, but not both.
   This datasource requires the following scopes:
   users:read.emailusers:read
-  If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.
 ---
 
 # slack_user (Data Source)
@@ -17,8 +16,6 @@ This datasource requires the following scopes:
 
 - users:read.email
 - users:read
-
-If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.
 
 
 

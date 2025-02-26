@@ -6,7 +6,6 @@ description: |-
   Retrieve a list of all activated and non-bot Slack users.
   This datasource requires the following scopes:
   users:read
-  If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.
 ---
 
 # slack_all_users (Data Source)
@@ -16,8 +15,6 @@ Retrieve a list of all activated and non-bot Slack users.
 This datasource requires the following scopes:
 
 - users:read
-
-If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.
 
 
 

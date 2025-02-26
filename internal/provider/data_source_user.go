@@ -46,9 +46,7 @@ func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 This datasource requires the following scopes:
 
 - users:read.email
-- users:read
-
-If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.`,
+- users:read`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Slack user ID to look up.",

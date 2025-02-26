@@ -50,9 +50,7 @@ func (d *AllUserGroupsDataSource) Schema(ctx context.Context, req datasource.Sch
 
 This datasource requires the following scopes:
 
-- usergroups:read
-
-If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.`,
+- usergroups:read`,
 		Description: "Retrieve all Slack user groups.",
 		Attributes: map[string]schema.Attribute{
 			"total_usergroups": schema.Int64Attribute{

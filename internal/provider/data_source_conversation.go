@@ -52,9 +52,7 @@ This datasource requires the following scopes:
 - channels:read (public channels)
 - groups:read (private channels)
 - im:read (optional)
-- mpim:read (optional)
-
-If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.`,
+- mpim:read (optional)`,
 		Attributes: map[string]schema.Attribute{
 			"channel_id": schema.StringAttribute{
 				MarkdownDescription: "The Slack channel ID to look up.",

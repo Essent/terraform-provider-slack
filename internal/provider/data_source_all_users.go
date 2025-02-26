@@ -46,9 +46,7 @@ func (d *AllUsersDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 
 This datasource requires the following scopes:
 
-- users:read
-
-If you get missing_scope errors while using this datasource, check the scopes against the documentation for the methods above.`,
+- users:read`,
 		Attributes: map[string]schema.Attribute{
 			"total_users": schema.Int64Attribute{
 				Description: "Number of users returned.",
