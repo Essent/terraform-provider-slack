@@ -46,6 +46,11 @@ func (d *AllUserGroupsDataSource) Metadata(ctx context.Context, req datasource.M
 
 func (d *AllUserGroupsDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: `Retrieve a list of all Slack user groups.
+
+This datasource requires the following scopes:
+
+- usergroups:read`,
 		Description: "Retrieve all Slack user groups.",
 		Attributes: map[string]schema.Attribute{
 			"total_usergroups": schema.Int64Attribute{

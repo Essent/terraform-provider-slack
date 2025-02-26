@@ -41,7 +41,12 @@ func (d *UserDataSource) Metadata(ctx context.Context, req datasource.MetadataRe
 
 func (d *UserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Retrieve Slack user information. Either `id` or `email` must be specified, but not both.",
+		MarkdownDescription: `Retrieve Slack user information. Either 'id' or 'email' must be specified, but not both.
+
+This datasource requires the following scopes:
+
+- users:read.email
+- users:read`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Slack user ID to look up.",

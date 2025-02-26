@@ -63,7 +63,12 @@ func (r *UserGroupResource) Schema(
 	resp *resource.SchemaResponse,
 ) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Manages a Slack user group.",
+		MarkdownDescription: `Manages a Slack user group.
+
+This resource requires the following scopes:
+
+- usergroups:write
+- usergroups:read`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,

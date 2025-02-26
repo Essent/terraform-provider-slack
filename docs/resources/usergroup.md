@@ -4,11 +4,18 @@ page_title: "slack_usergroup Resource - slack"
 subcategory: ""
 description: |-
   Manages a Slack user group.
+  This resource requires the following scopes:
+  usergroups:writeusergroups:read
 ---
 
 # slack_usergroup (Resource)
 
 Manages a Slack user group.
+
+This resource requires the following scopes:
+
+- usergroups:write
+- usergroups:read
 
 
 
