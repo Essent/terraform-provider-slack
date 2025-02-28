@@ -420,9 +420,9 @@ func findUserGroupByField(
 		var matches bool
 		switch searchField {
 		case "name":
-			matches = (g.Name == searchVal)
+			matches = strings.EqualFold(g.Name, searchVal)
 		case "handle":
-			matches = (g.Handle == searchVal)
+			matches = strings.EqualFold(g.Handle, searchVal)
 		case "id":
 			matches = (g.ID == searchVal)
 		default:
