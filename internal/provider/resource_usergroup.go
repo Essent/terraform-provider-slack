@@ -6,9 +6,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/essent/terraform-provider-slack/internal/slackExt"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -22,7 +20,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/slack-go/slack"
 )
 
 var (
@@ -36,7 +33,7 @@ func NewUserGroupResource() resource.Resource {
 }
 
 type UserGroupResource struct {
-	client slackExt.Client
+	service *UserGroupService
 }
 
 type UserGroupResourceModel struct {
@@ -49,11 +46,7 @@ type UserGroupResourceModel struct {
 	PreventConflicts types.Bool   `tfsdk:"prevent_conflicts"`
 }
 
-func (r *UserGroupResource) Metadata(
-	_ context.Context,
-	req resource.MetadataRequest,
-	resp *resource.MetadataResponse,
-) {
+func (r *UserGroupResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_usergroup"
 }
 
@@ -115,11 +108,7 @@ This resource requires the following scopes:
 	}
 }
 
-func (r *UserGroupResource) Configure(
-	_ context.Context,
-	req resource.ConfigureRequest,
-	resp *resource.ConfigureResponse,
-) {
+func (r *UserGroupResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -128,11 +117,11 @@ func (r *UserGroupResource) Configure(
 		resp.Diagnostics.AddError("Invalid Provider Data", "Could not create Slack client.")
 		return
 	}
-	r.client = pd.Client
+	r.service = &UserGroupService{Client: pd.Client}
 }
 
 func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
-	if r.client == nil || req.Plan.Raw.IsNull() {
+	if r.service == nil || req.Plan.Raw.IsNull() {
 		return
 	}
 
@@ -162,151 +151,49 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 
 	includeDisabled := isUpdate
 
-	name := plan.Name.ValueString()
-	existingByName, errNameLookup := findUserGroupByField(ctx, name, "name", includeDisabled, r.client)
-	if errNameLookup == nil {
+	if err := r.service.CheckConflicts(
+		ctx,
+		plan.Name.ValueString(),
+		plan.Handle.ValueString(),
+		includeDisabled,
+	); err != nil {
 		resp.Diagnostics.AddError(
-			"Conflict: Existing Enabled Group With Same Name",
-			fmt.Sprintf("An enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID),
+			"Conflict",
+			fmt.Sprintf("PreventConflicts = true: %v", err),
 		)
-	} else if !strings.Contains(errNameLookup.Error(), "no usergroup with name") {
-		resp.Diagnostics.AddError("Error Checking Name Conflict", errNameLookup.Error())
-	}
-
-	handle := plan.Handle.ValueString()
-	existingByHandle, errHandleLookup := findUserGroupByField(ctx, handle, "handle", includeDisabled, r.client)
-	if errHandleLookup == nil {
-		resp.Diagnostics.AddError(
-			"Conflict: Existing Enabled Group With Same Handle",
-			fmt.Sprintf("An enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID),
-		)
-	} else if !strings.Contains(errHandleLookup.Error(), "no usergroup with handle") {
-		resp.Diagnostics.AddError("Error Checking Handle Conflict", errHandleLookup.Error())
 	}
 }
 
-func (r *UserGroupResource) Create(
-	ctx context.Context,
-	req resource.CreateRequest,
-	resp *resource.CreateResponse,
-) {
+func (r *UserGroupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan UserGroupResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	channels := listToStringSlice(plan.Channels)
-
-	createReq := slack.UserGroup{
-		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
-		Handle:      plan.Handle.ValueString(),
-		Prefs: slack.UserGroupPrefs{
-			Channels: channels,
-		},
+	id, err := r.service.CreateGroup(ctx, toPlan(&plan))
+	if err != nil {
+		resp.Diagnostics.AddError("Create Error", err.Error())
+		return
 	}
-
-	created, errCreate := r.client.CreateUserGroup(ctx, createReq)
-	if errCreate != nil {
-		var lookupField, lookupValue string
-		switch errCreate.Error() {
-		case "name_already_exists":
-			lookupField = "name"
-			lookupValue = createReq.Name
-		case "handle_already_exists":
-			lookupField = "handle"
-			lookupValue = createReq.Handle
-		}
-
-		var existingGroup slack.UserGroup
-		if lookupField != "" {
-			var errLookup error
-			existingGroup, errLookup = findUserGroupByField(ctx, lookupValue, lookupField, true, r.client)
-			if errLookup != nil {
-				resp.Diagnostics.AddError(
-					"Create Error",
-					fmt.Sprintf("Slack returned %q, and %q when trying to find group with %s : %s", errCreate.Error(), errLookup.Error(), lookupField, lookupValue),
-				)
-				return
-			}
-
-			if existingGroup.DateDelete == 0 {
-				resp.Diagnostics.AddError(
-					"Create Error",
-					fmt.Sprintf(
-						"Conflict when creating group '%s' (conflicts with group ID: %s). Cannot reuse an enabled group.",
-						createReq.Name, existingGroup.ID,
-					),
-				)
-				return
-			}
-
-			if errEnable := r.enableAndUpdateUserGroup(ctx, existingGroup.ID, plan, channels); errEnable != nil {
-				resp.Diagnostics.AddError("Enable/Update Error", errEnable.Error())
-				return
-			}
-			plan.ID = types.StringValue(existingGroup.ID)
-		} else {
-			resp.Diagnostics.AddError("Create Error", fmt.Sprintf("Error creating user group: %q", errCreate.Error()))
-			return
-		}
-	} else {
-		plan.ID = types.StringValue(created.ID)
-		if err := r.updateUserGroupMembership(ctx, plan.ID.ValueString(), plan.Users); err != nil {
-			resp.Diagnostics.AddError("Members Update Error", err.Error())
-			return
-		}
-	}
+	plan.ID = types.StringValue(id)
 
 	if err := r.readIntoModel(ctx, &plan); err != nil {
 		resp.Diagnostics.AddError("Read Error", err.Error())
 		return
 	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *UserGroupResource) enableAndUpdateUserGroup(
-	ctx context.Context,
-	groupID string,
-	plan UserGroupResourceModel,
-	channels []string,
-) error {
-	_, err := r.client.EnableUserGroup(ctx, groupID)
-	if err != nil && err.Error() != "already_enabled" {
-		return fmt.Errorf("could not enable usergroup %s: %w", groupID, err)
-	}
-
-	opts := []slack.UpdateUserGroupsOption{
-		slack.UpdateUserGroupsOptionName(plan.Name.ValueString()),
-		slack.UpdateUserGroupsOptionHandle(plan.Handle.ValueString()),
-		slack.UpdateUserGroupsOptionDescription(&[]string{plan.Description.ValueString()}[0]),
-		slack.UpdateUserGroupsOptionChannels(channels),
-	}
-
-	if _, err := r.client.UpdateUserGroup(ctx, groupID, opts...); err != nil {
-		return fmt.Errorf("could not update usergroup %s: %w", groupID, err)
-	}
-
-	if err := r.updateUserGroupMembership(ctx, groupID, plan.Users); err != nil {
-		return fmt.Errorf("could not update usergroup members: %w", err)
-	}
-
-	return nil
-}
-
-func (r *UserGroupResource) Read(
-	ctx context.Context,
-	req resource.ReadRequest,
-	resp *resource.ReadResponse,
-) {
+func (r *UserGroupResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state UserGroupResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	found, err := findUserGroupByField(ctx, state.ID.ValueString(), "id", false, r.client)
+	grp, err := r.service.ReadGroup(ctx, state.ID.ValueString())
 	if err != nil {
 		tflog.Warn(ctx, "Usergroup not found in Slack; removing from state", map[string]interface{}{
 			"id": state.ID.ValueString(),
@@ -315,15 +202,11 @@ func (r *UserGroupResource) Read(
 		return
 	}
 
-	state.UpdateFromUserGroup(&found)
+	state.UpdateFromUserGroup(&grp)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *UserGroupResource) Update(
-	ctx context.Context,
-	req resource.UpdateRequest,
-	resp *resource.UpdateResponse,
-) {
+func (r *UserGroupResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan, state UserGroupResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -331,9 +214,7 @@ func (r *UserGroupResource) Update(
 		return
 	}
 
-	channels := listToStringSlice(plan.Channels)
-
-	if err := r.enableAndUpdateUserGroup(ctx, state.ID.ValueString(), plan, channels); err != nil {
+	if err := r.service.UpdateGroup(ctx, state.ID.ValueString(), toPlan(&plan)); err != nil {
 		resp.Diagnostics.AddError("Update Error", err.Error())
 		return
 	}
@@ -345,98 +226,29 @@ func (r *UserGroupResource) Update(
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
-func (r *UserGroupResource) Delete(
-	ctx context.Context,
-	req resource.DeleteRequest,
-	resp *resource.DeleteResponse,
-) {
+func (r *UserGroupResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state UserGroupResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	_, err := r.client.DisableUserGroup(ctx, state.ID.ValueString())
-	if err != nil {
+	if err := r.service.DeleteGroup(ctx, state.ID.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Delete Error", fmt.Sprintf("Could not disable usergroup: %s", err))
 		return
 	}
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *UserGroupResource) ImportState(
-	ctx context.Context,
-	req resource.ImportStateRequest,
-	resp *resource.ImportStateResponse,
-) {
+func (r *UserGroupResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 func (r *UserGroupResource) readIntoModel(ctx context.Context, model *UserGroupResourceModel) error {
-	found, err := findUserGroupByField(ctx, model.ID.ValueString(), "id", false, r.client)
+	grp, err := r.service.ReadGroup(ctx, model.ID.ValueString())
 	if err != nil {
-		tflog.Warn(ctx, "User group not found after create/update", map[string]interface{}{
-			"id": model.ID.ValueString(),
-		})
-		return fmt.Errorf("user group with ID %s not found: %w", model.ID.ValueString(), err)
+		return err
 	}
-	model.UpdateFromUserGroup(&found)
+	model.UpdateFromUserGroup(&grp)
 	return nil
-}
-
-func (r *UserGroupResource) updateUserGroupMembership(
-	ctx context.Context,
-	groupID string,
-	userList types.List,
-) error {
-	users := listToStringSlice(userList)
-	usersParam := strings.Join(users, ",")
-	if len(users) == 0 {
-		usersParam = "[]"
-	}
-
-	_, err := r.client.UpdateUserGroupMembers(ctx, groupID, usersParam)
-	if err != nil {
-		return fmt.Errorf("could not update usergroup members: %s", err)
-	}
-	return nil
-}
-
-func findUserGroupByField(
-	ctx context.Context,
-	searchVal, searchField string,
-	includeDisabled bool,
-	client slackExt.Client,
-) (slack.UserGroup, error) {
-	groups, err := client.GetUserGroups(ctx,
-		slack.GetUserGroupsOptionIncludeDisabled(includeDisabled),
-		slack.GetUserGroupsOptionIncludeUsers(true),
-	)
-	if err != nil {
-		return slack.UserGroup{}, err
-	}
-
-	for _, g := range groups {
-		var matches bool
-		switch searchField {
-		case "name":
-			matches = strings.EqualFold(g.Name, searchVal)
-		case "handle":
-			matches = strings.EqualFold(g.Handle, searchVal)
-		case "id":
-			matches = (g.ID == searchVal)
-		default:
-			continue
-		}
-
-		if matches {
-			if !includeDisabled && g.DateDelete == 0 {
-				return g, nil
-			} else if includeDisabled {
-				return g, nil
-			}
-		}
-	}
-
-	return slack.UserGroup{}, fmt.Errorf("no usergroup with %s %q found", searchField, searchVal)
 }
