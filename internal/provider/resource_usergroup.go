@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -33,7 +32,7 @@ func NewUserGroupResource() resource.Resource {
 }
 
 type UserGroupResource struct {
-	service *UserGroupService
+	service UserGroupService
 }
 
 type UserGroupResourceModel struct {
@@ -50,11 +49,7 @@ func (r *UserGroupResource) Metadata(ctx context.Context, req resource.MetadataR
 	resp.TypeName = req.ProviderTypeName + "_usergroup"
 }
 
-func (r *UserGroupResource) Schema(
-	_ context.Context,
-	_ resource.SchemaRequest,
-	resp *resource.SchemaResponse,
-) {
+func (r *UserGroupResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: `Manages a Slack user group.
 
@@ -117,7 +112,7 @@ func (r *UserGroupResource) Configure(ctx context.Context, req resource.Configur
 		resp.Diagnostics.AddError("Invalid Provider Data", "Could not create Slack client.")
 		return
 	}
-	r.service = &UserGroupService{Client: pd.Client}
+	r.service = NewUserGroupService(pd.Client)
 }
 
 func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {

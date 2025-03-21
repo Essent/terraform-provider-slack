@@ -12,8 +12,25 @@ import (
 	"github.com/slack-go/slack"
 )
 
-type UserGroupService struct {
-	Client slackExt.Client
+type UserGroupService interface {
+	CreateGroup(ctx context.Context, plan *UserGroupPlan) (string, error)
+	EnableAndUpdateUserGroup(ctx context.Context, groupID string, plan *UserGroupPlan) error
+	ReadGroup(ctx context.Context, id string) (slack.UserGroup, error)
+	UpdateGroup(ctx context.Context, id string, plan *UserGroupPlan) error
+	DeleteGroup(ctx context.Context, id string) error
+	CheckConflicts(ctx context.Context, name, handle string, includeDisabled bool) error
+	FindUserGroupByField(ctx context.Context, searchVal, searchField string, includeDisabled bool) (slack.UserGroup, error)
+	UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error
+}
+
+type userGroupServiceImpl struct {
+	client slackExt.Client
+}
+
+func NewUserGroupService(client slackExt.Client) UserGroupService {
+	return &userGroupServiceImpl{
+		client: client,
+	}
 }
 
 type UserGroupPlan struct {
@@ -38,7 +55,7 @@ func toPlan(m *UserGroupResourceModel) *UserGroupPlan {
 	}
 }
 
-func (s *UserGroupService) CreateGroup(ctx context.Context, plan *UserGroupPlan) (string, error) {
+func (s *userGroupServiceImpl) CreateGroup(ctx context.Context, plan *UserGroupPlan) (string, error) {
 	createReq := slack.UserGroup{
 		Name:        plan.Name,
 		Description: plan.Description,
@@ -48,7 +65,7 @@ func (s *UserGroupService) CreateGroup(ctx context.Context, plan *UserGroupPlan)
 		},
 	}
 
-	created, errCreate := s.Client.CreateUserGroup(ctx, createReq)
+	created, errCreate := s.client.CreateUserGroup(ctx, createReq)
 	if errCreate != nil {
 		var lookupField, lookupValue string
 		switch errCreate.Error() {
@@ -63,11 +80,13 @@ func (s *UserGroupService) CreateGroup(ctx context.Context, plan *UserGroupPlan)
 		if lookupField != "" {
 			existingGroup, errLookup := s.FindUserGroupByField(ctx, lookupValue, lookupField, true)
 			if errLookup != nil {
-				return "", fmt.Errorf("Slack returned %q, and %q when trying to find group with %s : %s", errCreate.Error(), errLookup.Error(), lookupField, lookupValue)
+				return "", fmt.Errorf("Slack returned %q, and %q when trying to find group with %s : %s",
+					errCreate.Error(), errLookup.Error(), lookupField, lookupValue)
 			}
 
 			if existingGroup.DateDelete == 0 {
-				return "", fmt.Errorf("Conflict when creating group '%s' (conflicts with group ID: %s). Cannot reuse an enabled group.", createReq.Name, existingGroup.ID)
+				return "", fmt.Errorf("Conflict when creating group '%s' (conflicts with group ID: %s). Cannot reuse an enabled group.",
+					createReq.Name, existingGroup.ID)
 			}
 
 			if errEnable := s.EnableAndUpdateUserGroup(ctx, existingGroup.ID, plan); errEnable != nil {
@@ -86,8 +105,8 @@ func (s *UserGroupService) CreateGroup(ctx context.Context, plan *UserGroupPlan)
 	return created.ID, nil
 }
 
-func (s *UserGroupService) EnableAndUpdateUserGroup(ctx context.Context, groupID string, plan *UserGroupPlan) error {
-	_, err := s.Client.EnableUserGroup(ctx, groupID)
+func (s *userGroupServiceImpl) EnableAndUpdateUserGroup(ctx context.Context, groupID string, plan *UserGroupPlan) error {
+	_, err := s.client.EnableUserGroup(ctx, groupID)
 	if err != nil && err.Error() != "already_enabled" {
 		return fmt.Errorf("could not enable usergroup %s: %w", groupID, err)
 	}
@@ -99,33 +118,34 @@ func (s *UserGroupService) EnableAndUpdateUserGroup(ctx context.Context, groupID
 		slack.UpdateUserGroupsOptionChannels(plan.Channels),
 	}
 
-	if _, err := s.Client.UpdateUserGroup(ctx, groupID, opts...); err != nil {
+	if _, err := s.client.UpdateUserGroup(ctx, groupID, opts...); err != nil {
 		return fmt.Errorf("could not update usergroup %s: %w", groupID, err)
 	}
 
 	return s.UpdateUserGroupMembership(ctx, groupID, plan.Users)
 }
 
-func (s *UserGroupService) ReadGroup(ctx context.Context, id string) (slack.UserGroup, error) {
+func (s *userGroupServiceImpl) ReadGroup(ctx context.Context, id string) (slack.UserGroup, error) {
 	return s.FindUserGroupByField(ctx, id, "id", false)
 }
 
-func (s *UserGroupService) UpdateGroup(ctx context.Context, id string, plan *UserGroupPlan) error {
+func (s *userGroupServiceImpl) UpdateGroup(ctx context.Context, id string, plan *UserGroupPlan) error {
 	return s.EnableAndUpdateUserGroup(ctx, id, plan)
 }
 
-func (s *UserGroupService) DeleteGroup(ctx context.Context, id string) error {
-	_, err := s.Client.DisableUserGroup(ctx, id)
+func (s *userGroupServiceImpl) DeleteGroup(ctx context.Context, id string) error {
+	_, err := s.client.DisableUserGroup(ctx, id)
 	if err != nil {
 		return fmt.Errorf("Could not disable usergroup: %s", err)
 	}
 	return nil
 }
 
-func (s *UserGroupService) CheckConflicts(ctx context.Context, name, handle string, includeDisabled bool) error {
+func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, name, handle string, includeDisabled bool) error {
 	existingByName, errNameLookup := s.FindUserGroupByField(ctx, name, "name", includeDisabled)
 	if errNameLookup == nil {
-		return fmt.Errorf("Conflict: Existing Enabled Group With Same Name\nAn enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID)
+		return fmt.Errorf("Conflict: Existing Enabled Group With Same Name\nAn enabled user group named %q already exists (ID: %s).",
+			existingByName.Name, existingByName.ID)
 	} else if !strings.Contains(errNameLookup.Error(), "no usergroup with name") {
 		return fmt.Errorf("Error Checking Name Conflict\n%s", errNameLookup.Error())
 	}
@@ -140,8 +160,8 @@ func (s *UserGroupService) CheckConflicts(ctx context.Context, name, handle stri
 	return nil
 }
 
-func (s *UserGroupService) FindUserGroupByField(ctx context.Context, searchVal, searchField string, includeDisabled bool) (slack.UserGroup, error) {
-	groups, err := s.Client.GetUserGroups(ctx,
+func (s *userGroupServiceImpl) FindUserGroupByField(ctx context.Context, searchVal, searchField string, includeDisabled bool) (slack.UserGroup, error) {
+	groups, err := s.client.GetUserGroups(ctx,
 		slack.GetUserGroupsOptionIncludeDisabled(includeDisabled),
 		slack.GetUserGroupsOptionIncludeUsers(true),
 	)
@@ -174,13 +194,13 @@ func (s *UserGroupService) FindUserGroupByField(ctx context.Context, searchVal, 
 	return slack.UserGroup{}, fmt.Errorf("no usergroup with %s %q found", searchField, searchVal)
 }
 
-func (s *UserGroupService) UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error {
+func (s *userGroupServiceImpl) UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error {
 	joined := "[]"
 	if len(users) > 0 {
 		joined = strings.Join(users, ",")
 	}
 
-	_, err := s.Client.UpdateUserGroupMembers(ctx, groupID, joined)
+	_, err := s.client.UpdateUserGroupMembers(ctx, groupID, joined)
 	if err != nil {
 		return fmt.Errorf("could not update usergroup members: %s", err)
 	}
