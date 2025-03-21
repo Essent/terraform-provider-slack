@@ -18,8 +18,8 @@ type UserGroupService interface {
 	ReadGroup(ctx context.Context, id string) (slack.UserGroup, error)
 	UpdateGroup(ctx context.Context, id string, plan *UserGroupPlan) error
 	DeleteGroup(ctx context.Context, id string) error
-	CheckConflicts(ctx context.Context, name, handle string, includeDisabled bool) error
-	FindUserGroupByField(ctx context.Context, searchVal, searchField string, includeDisabled bool) (slack.UserGroup, error)
+	CheckConflicts(ctx context.Context, id string, name string, handle string, includeDisabled bool) error
+	FindUserGroupByField(ctx context.Context, searchVal string, searchField string, includeDisabled bool) (slack.UserGroup, error)
 	UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error
 }
 
@@ -141,18 +141,21 @@ func (s *userGroupServiceImpl) DeleteGroup(ctx context.Context, id string) error
 	return nil
 }
 
-func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, name, handle string, includeDisabled bool) error {
+func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, resourceID, name, handle string, includeDisabled bool) error {
 	existingByName, errNameLookup := s.FindUserGroupByField(ctx, name, "name", includeDisabled)
 	if errNameLookup == nil {
-		return fmt.Errorf("Conflict: Existing Enabled Group With Same Name\nAn enabled user group named %q already exists (ID: %s).",
-			existingByName.Name, existingByName.ID)
+		if existingByName.ID != resourceID {
+			return fmt.Errorf("Conflict: Existing Enabled Group With Same Name\nAn enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID)
+		}
 	} else if !strings.Contains(errNameLookup.Error(), "no usergroup with name") {
 		return fmt.Errorf("Error Checking Name Conflict\n%s", errNameLookup.Error())
 	}
 
 	existingByHandle, errHandleLookup := s.FindUserGroupByField(ctx, handle, "handle", includeDisabled)
 	if errHandleLookup == nil {
-		return fmt.Errorf("Conflict: Existing Enabled Group With Same Handle\nAn enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID)
+		if existingByHandle.ID != resourceID {
+			return fmt.Errorf("Conflict: Existing Enabled Group With Same Handle\nAn enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID)
+		}
 	} else if !strings.Contains(errHandleLookup.Error(), "no usergroup with handle") {
 		return fmt.Errorf("Error Checking Handle Conflict\n%s", errHandleLookup.Error())
 	}

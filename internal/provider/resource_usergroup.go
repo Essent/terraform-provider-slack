@@ -139,19 +139,23 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		if plan.Name.ValueString() == state.Name.ValueString() {
+
+		if plan.Name.ValueString() == state.Name.ValueString() &&
+			plan.Handle.ValueString() == state.Handle.ValueString() {
 			return
 		}
 	}
 
 	includeDisabled := isUpdate
 
-	if err := r.service.CheckConflicts(
+	err := r.service.CheckConflicts(
 		ctx,
+		plan.ID.ValueString(),
 		plan.Name.ValueString(),
 		plan.Handle.ValueString(),
 		includeDisabled,
-	); err != nil {
+	)
+	if err != nil {
 		resp.Diagnostics.AddError(
 			"Conflict",
 			fmt.Sprintf("PreventConflicts = true: %v", err),
