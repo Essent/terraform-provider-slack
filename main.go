@@ -9,6 +9,7 @@ import (
 	"log"
 
 	"github.com/essent/terraform-provider-slack/internal/provider"
+	"github.com/essent/terraform-provider-slack/internal/provider/dependencies"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
@@ -35,7 +36,7 @@ func main() {
 		Debug:   debug,
 	}
 
-	err := providerserver.Serve(context.Background(), provider.New(version), opts)
+	err := providerserver.Serve(context.Background(), provider.New(version, dependencies.New()), opts)
 
 	if err != nil {
 		log.Fatal(err.Error())
