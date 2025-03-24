@@ -32,7 +32,8 @@ type SlackProviderModel struct {
 }
 
 type SlackProviderData struct {
-	Client slackExt.Client
+	Client           slackExt.Client
+	UserGroupService UserGroupService
 }
 
 func (p *SlackProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
