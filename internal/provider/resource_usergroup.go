@@ -112,7 +112,11 @@ func (r *UserGroupResource) Configure(ctx context.Context, req resource.Configur
 		resp.Diagnostics.AddError("Invalid Provider Data", "Could not create Slack client.")
 		return
 	}
-	r.service = NewUserGroupService(pd.Client)
+	if pd.UserGroupService != nil {
+		r.service = pd.UserGroupService
+	} else {
+		r.service = NewUserGroupService(pd.Client)
+	}
 }
 
 func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
