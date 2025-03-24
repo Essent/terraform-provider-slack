@@ -3,12 +3,18 @@
 page_title: "slack_all_usergroups Data Source - slack"
 subcategory: ""
 description: |-
-  Retrieve all Slack user groups.
+  Retrieve a list of all Slack user groups.
+  This datasource requires the following scopes:
+  usergroups:read
 ---
 
 # slack_all_usergroups (Data Source)
 
-Retrieve all Slack user groups.
+Retrieve a list of all Slack user groups.
+
+This datasource requires the following scopes:
+
+- usergroups:read
 
 
 

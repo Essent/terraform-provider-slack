@@ -1,18 +1,16 @@
-# Terraform Provider Scaffolding (Terraform Plugin Framework)
+# Terraform Provider Slack
 
-_This template repository is built on the [Terraform Plugin Framework](https://github.com/hashicorp/terraform-plugin-framework). The template repository built on the [Terraform Plugin SDK](https://github.com/hashicorp/terraform-plugin-sdk) can be found at [terraform-provider-scaffolding](https://github.com/hashicorp/terraform-provider-scaffolding). See [Which SDK Should I Use?](https://developer.hashicorp.com/terraform/plugin/framework-benefits) in the Terraform documentation for additional information._
+This provider manages Slack usergroups as a resource and provides data sources for other Slack objects (e.g. channels, users).
+Compared to the original [provider](https://github.com/pablovarela/terraform-provider-slack) this version contains various changes:
+- Rebuilt around the terraform plugin framework
+- Implemented rate limit handling for all Slack API endpoints
+- Improved handling of conflicts with existing usergroups
+- User datasources no longer return disabled/deleted users
+- Removed the need for costly lookups by introducing new datasources that return lists of usergroups/users
 
-This repository is a *template* for a [Terraform](https://www.terraform.io) provider. It is intended as a starting point for creating Terraform providers, containing:
-
-- A resource and a data source (`internal/provider/`),
-- Examples (`examples/`) and generated documentation (`docs/`),
-- Miscellaneous meta files.
-
-These files contain boilerplate code that you will need to edit to create your own Terraform provider. Tutorials for creating Terraform providers can be found on the [HashiCorp Developer](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework) platform. _Terraform Plugin Framework specific guides are titled accordingly._
-
-Please see the [GitHub template repository documentation](https://help.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-repository-from-a-template) for how to create a new repository from this template on GitHub.
-
-Once you've written your provider, you'll want to [publish it on the Terraform Registry](https://developer.hashicorp.com/terraform/registry/providers/publishing) so that others can use it.
+Contributions are welcome!
+Some ideas for future improvements:
+- Implement a conversation resource to manage channels
 
 ## Requirements
 
@@ -22,8 +20,8 @@ Once you've written your provider, you'll want to [publish it on the Terraform R
 ## Building The Provider
 
 1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
+2. Enter the repository directory
+3. Build the provider using the Go `install` command:
 
 ```shell
 go install
@@ -44,9 +42,25 @@ go mod tidy
 Then commit the changes to `go.mod` and `go.sum`.
 
 ## Using the provider
+```terraform
+terraform {
+  required_providers {
+    slack = {
+      source = "essent/slack"
+    }
+  }
+}
 
-Fill this in for each provider
+provider "slack" {
+  slack_token = "xoxb-123456789012-123456789012-123456789012-123456789012"
+  # Alternatively, set the SLACK_TOKEN env var
+}
 
+resource "slack_usergroup" "hello_world" {
+  name   = "hello_world"
+  handle = "hello_world"
+}
+```
 ## Developing the Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).

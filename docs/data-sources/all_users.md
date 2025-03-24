@@ -3,12 +3,18 @@
 page_title: "slack_all_users Data Source - slack"
 subcategory: ""
 description: |-
-  
+  Retrieve a list of all activated and non-bot Slack users.
+  This datasource requires the following scopes:
+  users:read
 ---
 
 # slack_all_users (Data Source)
 
+Retrieve a list of all activated and non-bot Slack users.
 
+This datasource requires the following scopes:
+
+- users:read
 
 
 

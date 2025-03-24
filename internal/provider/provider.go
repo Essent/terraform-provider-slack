@@ -32,7 +32,8 @@ type SlackProviderModel struct {
 }
 
 type SlackProviderData struct {
-	Client slackExt.Client
+	Client           slackExt.Client
+	UserGroupService UserGroupService
 }
 
 func (p *SlackProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -42,9 +43,10 @@ func (p *SlackProvider) Metadata(ctx context.Context, req provider.MetadataReque
 
 func (p *SlackProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		MarkdownDescription: "The Slack provider allows you to manage Slack resources. Use it to create, read, update, and delete Slack entities.",
 		Attributes: map[string]schema.Attribute{
 			"slack_token": schema.StringAttribute{
-				MarkdownDescription: "Slack token to authenticate API calls. Can also be set with the `SLACK_TOKEN` environment variable.",
+				MarkdownDescription: "The Slack token used for API authentication. It can be provided in the provider block or via the `SLACK_TOKEN` environment variable.",
 				Optional:            true,
 				Sensitive:           true,
 			},
