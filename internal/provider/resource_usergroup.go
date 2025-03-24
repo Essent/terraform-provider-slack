@@ -144,8 +144,7 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 			return
 		}
 
-		if plan.Name.ValueString() == state.Name.ValueString() &&
-			plan.Handle.ValueString() == state.Handle.ValueString() {
+		if state.SameNameAndHandleAs(&plan) {
 			return
 		}
 	}
@@ -165,6 +164,14 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 			fmt.Sprintf("PreventConflicts = true: %v", err),
 		)
 	}
+}
+
+func (plan *UserGroupResourceModel) SameNameAndHandleAs(state *UserGroupResourceModel) bool {
+	if state == nil {
+		return false
+	}
+	return plan.Name.ValueString() == state.Name.ValueString() &&
+		plan.Handle.ValueString() == state.Handle.ValueString()
 }
 
 func (r *UserGroupResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
