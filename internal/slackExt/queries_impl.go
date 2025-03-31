@@ -6,6 +6,7 @@ package slackExt
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/slack-go/slack"
 )
@@ -27,9 +28,9 @@ func (q *queriesImpl) FindUserGroupByField(ctx context.Context, field, value str
 		var matches bool
 		switch field {
 		case "name":
-			matches = (g.Name == value)
+			matches = strings.EqualFold(g.Name, value)
 		case "handle":
-			matches = (g.Handle == value)
+			matches = strings.EqualFold(g.Handle, value)
 		case "id":
 			matches = (g.ID == value)
 		default:

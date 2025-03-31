@@ -19,17 +19,18 @@ type UserGroupService interface {
 	UpdateGroup(ctx context.Context, id string, plan *UserGroupPlan) error
 	DeleteGroup(ctx context.Context, id string) error
 	CheckConflicts(ctx context.Context, id string, name string, handle string, includeDisabled bool) error
-	FindUserGroupByField(ctx context.Context, searchVal string, searchField string, includeDisabled bool) (slack.UserGroup, error)
 	UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error
 }
 
 type userGroupServiceImpl struct {
-	client slackExt.Client
+	client  slackExt.Client
+	queries slackExt.Queries
 }
 
 func NewUserGroupService(client slackExt.Client) UserGroupService {
 	return &userGroupServiceImpl{
-		client: client,
+		client:  client,
+		queries: slackExt.NewQueries(client),
 	}
 }
 
@@ -78,7 +79,7 @@ func (s *userGroupServiceImpl) CreateGroup(ctx context.Context, plan *UserGroupP
 		}
 
 		if lookupField != "" {
-			existingGroup, errLookup := s.FindUserGroupByField(ctx, lookupValue, lookupField, true)
+			existingGroup, errLookup := s.queries.FindUserGroupByField(ctx, lookupField, lookupValue, true)
 			if errLookup != nil {
 				return "", fmt.Errorf("Slack returned %q, and %q when trying to find group with %s : %s",
 					errCreate.Error(), errLookup.Error(), lookupField, lookupValue)
@@ -126,7 +127,7 @@ func (s *userGroupServiceImpl) EnableAndUpdateUserGroup(ctx context.Context, gro
 }
 
 func (s *userGroupServiceImpl) ReadGroup(ctx context.Context, id string) (slack.UserGroup, error) {
-	return s.FindUserGroupByField(ctx, id, "id", false)
+	return s.queries.FindUserGroupByField(ctx, "id", id, false)
 }
 
 func (s *userGroupServiceImpl) UpdateGroup(ctx context.Context, id string, plan *UserGroupPlan) error {
@@ -142,7 +143,7 @@ func (s *userGroupServiceImpl) DeleteGroup(ctx context.Context, id string) error
 }
 
 func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, resourceID, name, handle string, includeDisabled bool) error {
-	existingByName, errNameLookup := s.FindUserGroupByField(ctx, name, "name", includeDisabled)
+	existingByName, errNameLookup := s.queries.FindUserGroupByField(ctx, "name", name, includeDisabled)
 	if errNameLookup == nil {
 		if existingByName.ID != resourceID {
 			return fmt.Errorf("Conflict: Existing Enabled Group With Same Name\nAn enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID)
@@ -151,7 +152,7 @@ func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, resourceID, n
 		return fmt.Errorf("Error Checking Name Conflict\n%s", errNameLookup.Error())
 	}
 
-	existingByHandle, errHandleLookup := s.FindUserGroupByField(ctx, handle, "handle", includeDisabled)
+	existingByHandle, errHandleLookup := s.queries.FindUserGroupByField(ctx, "handle", handle, includeDisabled)
 	if errHandleLookup == nil {
 		if existingByHandle.ID != resourceID {
 			return fmt.Errorf("Conflict: Existing Enabled Group With Same Handle\nAn enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID)
@@ -161,40 +162,6 @@ func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, resourceID, n
 	}
 
 	return nil
-}
-
-func (s *userGroupServiceImpl) FindUserGroupByField(ctx context.Context, searchVal, searchField string, includeDisabled bool) (slack.UserGroup, error) {
-	groups, err := s.client.GetUserGroups(ctx,
-		slack.GetUserGroupsOptionIncludeDisabled(includeDisabled),
-		slack.GetUserGroupsOptionIncludeUsers(true),
-	)
-	if err != nil {
-		return slack.UserGroup{}, err
-	}
-
-	for _, g := range groups {
-		var matches bool
-		switch searchField {
-		case "name":
-			matches = strings.EqualFold(g.Name, searchVal)
-		case "handle":
-			matches = strings.EqualFold(g.Handle, searchVal)
-		case "id":
-			matches = (g.ID == searchVal)
-		default:
-			continue
-		}
-
-		if matches {
-			if !includeDisabled && g.DateDelete == 0 {
-				return g, nil
-			} else if includeDisabled {
-				return g, nil
-			}
-		}
-	}
-
-	return slack.UserGroup{}, fmt.Errorf("no usergroup with %s %q found", searchField, searchVal)
 }
 
 func (s *userGroupServiceImpl) UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error {
