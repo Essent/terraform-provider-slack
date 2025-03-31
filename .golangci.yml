@@ -1,6 +1,9 @@
 version: "2"
 linters:
   default: none
+  settings:
+    paralleltest:
+      ignore-missing: true
   enable:
     - copyloopvar
     - durationcheck

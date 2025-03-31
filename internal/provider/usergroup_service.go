@@ -81,12 +81,12 @@ func (s *userGroupServiceImpl) CreateGroup(ctx context.Context, plan *UserGroupP
 		if lookupField != "" {
 			existingGroup, errLookup := s.queries.FindUserGroupByField(ctx, lookupField, lookupValue, true)
 			if errLookup != nil {
-				return "", fmt.Errorf("Slack returned %q, and %q when trying to find group with %s : %s",
+				return "", fmt.Errorf("slack returned %q, and %q when trying to find group with %s : %s",
 					errCreate.Error(), errLookup.Error(), lookupField, lookupValue)
 			}
 
 			if existingGroup.DateDelete == 0 {
-				return "", fmt.Errorf("Conflict when creating group '%s' (conflicts with group ID: %s). Cannot reuse an enabled group.",
+				return "", fmt.Errorf("conflict when creating group '%s' (conflicts with group ID: %s): cannot reuse an enabled group",
 					createReq.Name, existingGroup.ID)
 			}
 
@@ -95,7 +95,7 @@ func (s *userGroupServiceImpl) CreateGroup(ctx context.Context, plan *UserGroupP
 			}
 			return existingGroup.ID, nil
 		} else {
-			return "", fmt.Errorf("Error creating user group: %q", errCreate.Error())
+			return "", fmt.Errorf("error creating user group: %q", errCreate.Error())
 		}
 	}
 
@@ -137,7 +137,7 @@ func (s *userGroupServiceImpl) UpdateGroup(ctx context.Context, id string, plan 
 func (s *userGroupServiceImpl) DeleteGroup(ctx context.Context, id string) error {
 	_, err := s.client.DisableUserGroup(ctx, id)
 	if err != nil {
-		return fmt.Errorf("Could not disable usergroup: %s", err)
+		return fmt.Errorf("could not disable usergroup: %s", err)
 	}
 	return nil
 }
@@ -146,19 +146,19 @@ func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, resourceID, n
 	existingByName, errNameLookup := s.queries.FindUserGroupByField(ctx, "name", name, includeDisabled)
 	if errNameLookup == nil {
 		if existingByName.ID != resourceID {
-			return fmt.Errorf("Conflict: Existing Enabled Group With Same Name\nAn enabled user group named %q already exists (ID: %s).", existingByName.Name, existingByName.ID)
+			return fmt.Errorf("conflict: existing enabled group with same name\nAn enabled user group named %q already exists (ID: %s)", existingByName.Name, existingByName.ID)
 		}
 	} else if !strings.Contains(errNameLookup.Error(), "no usergroup with name") {
-		return fmt.Errorf("Error Checking Name Conflict\n%s", errNameLookup.Error())
+		return fmt.Errorf("error checking name conflict\n%s", errNameLookup.Error())
 	}
 
 	existingByHandle, errHandleLookup := s.queries.FindUserGroupByField(ctx, "handle", handle, includeDisabled)
 	if errHandleLookup == nil {
 		if existingByHandle.ID != resourceID {
-			return fmt.Errorf("Conflict: Existing Enabled Group With Same Handle\nAn enabled user group with handle %q already exists (ID: %s).", existingByHandle.Handle, existingByHandle.ID)
+			return fmt.Errorf("conflict: existing enabled group with same handle\nAn enabled user group with handle %q already exists (ID: %s)", existingByHandle.Handle, existingByHandle.ID)
 		}
 	} else if !strings.Contains(errHandleLookup.Error(), "no usergroup with handle") {
-		return fmt.Errorf("Error Checking Handle Conflict\n%s", errHandleLookup.Error())
+		return fmt.Errorf("error checking handle conflict\n%s", errHandleLookup.Error())
 	}
 
 	return nil
