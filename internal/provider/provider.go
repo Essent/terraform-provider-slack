@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/essent/terraform-provider-slack/internal/provider/dependencies"
 	"github.com/essent/terraform-provider-slack/internal/slackExt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -17,14 +18,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/slack-go/slack"
 )
 
 var _ provider.Provider = &SlackProvider{}
 var _ provider.ProviderWithFunctions = &SlackProvider{}
 
 type SlackProvider struct {
-	version string
+	version      string
+	dependencies dependencies.Dependencies
 }
 
 type SlackProviderModel struct {
@@ -77,8 +78,8 @@ func (p *SlackProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 
 	tflog.Info(ctx, "Configuring slack client")
-	client := slack.New(slackToken)
-	_, err := client.AuthTest()
+	client := p.dependencies.CreateSlackClient(slackToken)
+	_, err := client.AuthTest(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Invalid Slack Token",
@@ -87,8 +88,12 @@ func (p *SlackProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		return
 	}
 
-	resp.DataSourceData = &SlackProviderData{Client: slackExt.New(client)}
-	resp.ResourceData = &SlackProviderData{Client: slackExt.New(client)}
+	providerData := &SlackProviderData{
+		Client:           client,
+		UserGroupService: NewUserGroupService(client),
+	}
+	resp.DataSourceData = providerData
+	resp.ResourceData = providerData
 }
 
 func (p *SlackProvider) Resources(ctx context.Context) []func() resource.Resource {
@@ -112,8 +117,8 @@ func (p *SlackProvider) Functions(ctx context.Context) []func() function.Functio
 	}
 }
 
-func New(version string) func() provider.Provider {
+func New(version string, dependencies dependencies.Dependencies) func() provider.Provider {
 	return func() provider.Provider {
-		return &SlackProvider{version: version}
+		return &SlackProvider{version: version, dependencies: dependencies}
 	}
 }

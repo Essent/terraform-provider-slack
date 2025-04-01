@@ -10,6 +10,7 @@ import (
 )
 
 type Client interface {
+	AuthTest(ctx context.Context) (*slack.AuthTestResponse, error)
 	GetUserInfo(ctx context.Context, user string) (*slack.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*slack.User, error)
 	GetUsersContext(ctx context.Context) ([]slack.User, error)
