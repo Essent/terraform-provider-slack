@@ -51,7 +51,7 @@ func toPlan(m *UserGroupResourceModel) *UserGroupPlan {
 		Description:      m.Description.ValueString(),
 		Handle:           m.Handle.ValueString(),
 		Channels:         listToStringSlice(m.Channels),
-		Users:            listToStringSlice(m.Users),
+		Users:            setToStringSlice(m.Users),
 		PreventConflicts: m.PreventConflicts.ValueBool(),
 	}
 }
