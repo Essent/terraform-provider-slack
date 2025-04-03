@@ -32,7 +32,7 @@ This resource requires the following scopes:
 - `channels` (List of String) Channels shared by the user group.
 - `description` (String)
 - `prevent_conflicts` (Boolean) If true, the plan fails if there's an enabled user group with the same name or handle.
-- `users` (List of String) List of user IDs in the user group.
+- `users` (Set of String) List of user IDs in the user group.
 
 ### Read-Only
 
