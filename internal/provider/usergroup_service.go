@@ -143,25 +143,31 @@ func (s *userGroupServiceImpl) DeleteGroup(ctx context.Context, id string) error
 }
 
 func (s *userGroupServiceImpl) CheckConflicts(ctx context.Context, resourceID, name, handle string, includeDisabled bool) error {
-	existingByName, errNameLookup := s.queries.FindUserGroupByField(ctx, "name", name, includeDisabled)
-	if errNameLookup == nil {
-		if existingByName.ID != resourceID {
-			return fmt.Errorf("conflict: existing enabled group with same name\nAn enabled user group named %q already exists (ID: %s)", existingByName.Name, existingByName.ID)
+	conflict := func(field, val string) error {
+		existing, errLookup := s.queries.FindUserGroupByField(ctx, field, val, includeDisabled)
+		if errLookup != nil {
+			if !strings.Contains(errLookup.Error(), "no usergroup with "+field) {
+				return fmt.Errorf("error checking %s conflict\n%s", field, errLookup.Error())
+			}
+			return nil
 		}
-	} else if !strings.Contains(errNameLookup.Error(), "no usergroup with name") {
-		return fmt.Errorf("error checking name conflict\n%s", errNameLookup.Error())
+		if existing.ID != resourceID {
+			return fmt.Errorf("conflict: existing usergroup with same %s\nA usergroup with %s %q already exists (ID: %s)", field, field, val, existing.ID)
+		}
+		return nil
 	}
 
-	existingByHandle, errHandleLookup := s.queries.FindUserGroupByField(ctx, "handle", handle, includeDisabled)
-	if errHandleLookup == nil {
-		if existingByHandle.ID != resourceID {
-			return fmt.Errorf("conflict: existing enabled group with same handle\nAn enabled user group with handle %q already exists (ID: %s)", existingByHandle.Handle, existingByHandle.ID)
-		}
-	} else if !strings.Contains(errHandleLookup.Error(), "no usergroup with handle") {
-		return fmt.Errorf("error checking handle conflict\n%s", errHandleLookup.Error())
+	var errs []string
+	if err := conflict("name", name); err != nil {
+		errs = append(errs, err.Error())
 	}
-
-	return nil
+	if err := conflict("handle", handle); err != nil {
+		errs = append(errs, err.Error())
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s", strings.Join(errs, "\n\n"))
 }
 
 func (s *userGroupServiceImpl) UpdateUserGroupMembership(ctx context.Context, groupID string, users []string) error {

@@ -158,7 +158,7 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Conflict",
-			fmt.Sprintf("PreventConflicts = true: %v", err),
+			fmt.Sprintf("PreventConflicts = true:\n%v", err),
 		)
 	}
 }
