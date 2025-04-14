@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -41,7 +42,7 @@ type UserGroupResourceModel struct {
 	Description      types.String `tfsdk:"description"`
 	Handle           types.String `tfsdk:"handle"`
 	Channels         types.List   `tfsdk:"channels"`
-	Users            types.List   `tfsdk:"users"`
+	Users            types.Set    `tfsdk:"users"`
 	PreventConflicts types.Bool   `tfsdk:"prevent_conflicts"`
 }
 
@@ -84,12 +85,12 @@ This resource requires the following scopes:
 					types.ListValueMust(types.StringType, []attr.Value{}),
 				),
 			},
-			"users": schema.ListAttribute{
+			"users": schema.SetAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Default: listdefault.StaticValue(
-					types.ListValueMust(types.StringType, []attr.Value{}),
+				Default: setdefault.StaticValue(
+					types.SetValueMust(types.StringType, []attr.Value{}),
 				),
 				Description: "List of user IDs in the user group.",
 			},
@@ -157,7 +158,7 @@ func (r *UserGroupResource) ModifyPlan(ctx context.Context, req resource.ModifyP
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Conflict",
-			fmt.Sprintf("PreventConflicts = true: %v", err),
+			fmt.Sprintf("PreventConflicts = true:\n%v", err),
 		)
 	}
 }

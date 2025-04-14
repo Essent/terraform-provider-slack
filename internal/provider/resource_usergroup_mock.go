@@ -55,7 +55,7 @@ func (b *UserGroupResourceModelBuilder) WithUsers(value []string) *UserGroupReso
 	for i, v := range value {
 		attrValues[i] = types.StringValue(v)
 	}
-	b.result.Users = types.ListValueMust(types.StringType, attrValues)
+	b.result.Users = types.SetValueMust(types.StringType, attrValues)
 
 	return b
 }
