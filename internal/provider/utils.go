@@ -57,11 +57,32 @@ func stringSliceToSet(list []string) types.Set {
 	return types.SetValueMust(types.StringType, attrValues)
 }
 
+// Slack does not preserve the order of prefs.channels, so a read-back keeps the
+// order Terraform already holds. Returning a different order for the same
+// channels breaks the guarantee that a known planned value survives apply.
+func orderedLike(reference, actual []string) []string {
+	remaining := make(map[string]bool, len(actual))
+	for _, s := range actual {
+		remaining[s] = true
+	}
+
+	ordered := make([]string, 0, len(actual))
+	for _, group := range [][]string{reference, actual} {
+		for _, s := range group {
+			if remaining[s] {
+				ordered = append(ordered, s)
+				delete(remaining, s)
+			}
+		}
+	}
+	return ordered
+}
+
 func (m *UserGroupResourceModel) UpdateFromUserGroup(ug *slack.UserGroup) {
 	m.ID = types.StringValue(ug.ID)
 	m.Name = types.StringValue(ug.Name)
 	m.Description = types.StringValue(ug.Description)
 	m.Handle = types.StringValue(ug.Handle)
-	m.Channels = stringSliceToList(ug.Prefs.Channels)
+	m.Channels = stringSliceToList(orderedLike(listToStringSlice(m.Channels), ug.Prefs.Channels))
 	m.Users = stringSliceToSet(ug.Users)
 }
