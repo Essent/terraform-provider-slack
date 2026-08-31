@@ -57,11 +57,29 @@ func stringSliceToSet(list []string) types.Set {
 	return types.SetValueMust(types.StringType, attrValues)
 }
 
+func orderedLike(reference, actual []string) []string {
+	remaining := make(map[string]bool, len(actual))
+	for _, s := range actual {
+		remaining[s] = true
+	}
+
+	ordered := make([]string, 0, len(actual))
+	for _, group := range [][]string{reference, actual} {
+		for _, s := range group {
+			if remaining[s] {
+				ordered = append(ordered, s)
+				delete(remaining, s)
+			}
+		}
+	}
+	return ordered
+}
+
 func (m *UserGroupResourceModel) UpdateFromUserGroup(ug *slack.UserGroup) {
 	m.ID = types.StringValue(ug.ID)
 	m.Name = types.StringValue(ug.Name)
 	m.Description = types.StringValue(ug.Description)
 	m.Handle = types.StringValue(ug.Handle)
-	m.Channels = stringSliceToList(ug.Prefs.Channels)
+	m.Channels = stringSliceToList(orderedLike(listToStringSlice(m.Channels), ug.Prefs.Channels))
 	m.Users = stringSliceToSet(ug.Users)
 }
