@@ -115,7 +115,7 @@ func (s *userGroupServiceImpl) EnableAndUpdateUserGroup(ctx context.Context, gro
 	opts := []slack.UpdateUserGroupsOption{
 		slack.UpdateUserGroupsOptionName(plan.Name),
 		slack.UpdateUserGroupsOptionHandle(plan.Handle),
-		slack.UpdateUserGroupsOptionDescription(&[]string{plan.Description}[0]),
+		slack.UpdateUserGroupsOptionDescription(new(plan.Description)),
 		slack.UpdateUserGroupsOptionChannels(plan.Channels),
 	}
 
