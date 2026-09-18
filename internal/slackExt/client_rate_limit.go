@@ -5,6 +5,7 @@ package slackExt
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/slack-go/slack"
@@ -21,7 +22,7 @@ func rateLimit[R any](ctx context.Context, f func() (R, error), getZeroValue fun
 			return result, nil
 		}
 
-		if rateLimitedError, ok := err.(*slack.RateLimitedError); ok {
+		if rateLimitedError, ok := errors.AsType[*slack.RateLimitedError](err); ok {
 			select {
 			case <-time.After(rateLimitedError.RetryAfter):
 			case <-ctx.Done():
